@@ -25,9 +25,9 @@ type HyperparametersMessage struct {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	// CheckOrigin: func(r *http.Request) bool {
-	// 	return true // Accepting all requests
-	// },
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Accepting all requests
+	},
 }
 
 type Server struct {
@@ -66,22 +66,29 @@ func (s *Server) AddMasterHandler(id string, handler func(connection *websocket.
 }
 
 func (server *Server) masterHandler(w http.ResponseWriter, r *http.Request) {
-	connection, _ := upgrader.Upgrade(w, r, nil)
-
-	server.MasterClients[connection] = &MasterClient{
-		Connection: connection,
+	connection, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error upgrading connection: " + err.Error())
+		return
 	}
+
+	MasterClient := MasterClient{Connection: connection}
+	server.MasterClients[connection] = &MasterClient
 
 	for {
 		messageType, message, err := connection.ReadMessage()
-		m := Message{}
-		json.Unmarshal(message, &m)
-		fmt.Printf("Recieved message: %s", string(message))
-
 		if err != nil || messageType == websocket.CloseMessage {
+			fmt.Println(err)
 			break // Exit the loop if the client tries to close the connection or the connection is interrupted
 		}
 
+		m := Message{}
+		if err = json.Unmarshal(message, &m); err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		fmt.Printf("Recieved message: %s\n", string(message))
 		if server.workerHandlers[m.ID] == nil {
 			fmt.Println("Unrecognized message ID: " + m.ID)
 		}
@@ -95,7 +102,11 @@ func (server *Server) masterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
-	connection, _ := upgrader.Upgrade(w, r, nil)
+	connection, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error upgrading connection: " + err.Error())
+		return
+	}
 	worker := NewWorker(connection)
 	server.WorkerClients[connection] = worker
 
@@ -105,15 +116,17 @@ func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		messageType, message, err := connection.ReadMessage()
-		m := Message{}
-		json.Unmarshal(message, &m)
-		fmt.Println(m.ID)
-		fmt.Println(string(message))
-
 		if err != nil || messageType == websocket.CloseMessage {
 			break // Exit the loop if the client tries to close the connection or the connection is interrupted
 		}
 
+		m := Message{}
+		if err = json.Unmarshal(message, &m); err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		fmt.Printf("Recieved message: %s\n", string(message))
 		if server.workerHandlers[m.ID] == nil {
 			fmt.Println("Unrecognized message ID: " + m.ID)
 		}
