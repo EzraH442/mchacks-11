@@ -50,6 +50,7 @@ func (c *Client) SendHyperparameters(hyperparameters map[string]int) {
 
 	c.Status = Running
 	c.Connection.WriteJSON(HyperparametersMessage{ID: "start-hyperparameters", Hyperparameters: hyperparameters})
+	fmt.Printf("Sent hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), c.Connection.RemoteAddr())
 }
 
 type Server struct {
@@ -68,7 +69,6 @@ func New(handlers map[string]func(connection *websocket.Conn, message []byte)) *
 
 func (s *Server) Start() {
 	http.HandleFunc("/", s.handler)
-	fmt.Println("Server listening on port 8080")
 	http.ListenAndServe(":8080", nil)
 }
 
