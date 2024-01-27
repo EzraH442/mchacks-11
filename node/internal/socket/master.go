@@ -23,3 +23,7 @@ func (c *MasterClient) SendClientFinishedTrainingMessage(message string) {
 func (c *MasterClient) SendClientDisconnectedMessage(workerID string) {
 	c.Connection.WriteJSON(TextMessage{ID: "client-disconnected", Message: workerID})
 }
+
+func (c *MasterClient) SendFinished() {
+	c.Connection.WriteJSON(TextMessage{ID: "client-disconnected", Message: ""})
+}

@@ -12,7 +12,6 @@ type ClientStatus int
 const (
 	Idle ClientStatus = iota
 	Running
-	Finished
 )
 
 type WorkerClient struct {
@@ -37,4 +36,8 @@ func (c *WorkerClient) SendHyperparameters(hyperparameters map[string]int) {
 	c.Status = Running
 	c.Connection.WriteJSON(HyperparametersMessage{ID: "start-hyperparameters", Hyperparameters: hyperparameters})
 	fmt.Printf("Sent hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), c.Connection.RemoteAddr())
+}
+
+func (c *WorkerClient) SendFinished() {
+	c.Connection.WriteJSON(TextMessage{ID: "finished-training", Message: "Finished training"})
 }
