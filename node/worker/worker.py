@@ -16,7 +16,7 @@ class Worker:
 
 
 NewSocket = Worker("ws://localhost")
-NewSocket.send_result(json.dumps({"msg": "wee", "ID": "ping"}))
+NewSocket.send_result(json.dumps({"msg": "a", "ID": "ping"}))
 
 
 
