@@ -76,8 +76,7 @@ func (server *Server) masterHandler(w http.ResponseWriter, r *http.Request) {
 		messageType, message, err := connection.ReadMessage()
 		m := Message{}
 		json.Unmarshal(message, &m)
-		fmt.Println(m.ID)
-		fmt.Println(string(message))
+		fmt.Printf("Recieved message: %s", string(message))
 
 		if err != nil || messageType == websocket.CloseMessage {
 			break // Exit the loop if the client tries to close the connection or the connection is interrupted

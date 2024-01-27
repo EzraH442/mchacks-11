@@ -59,11 +59,9 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 	go dummyChannel(tr.combinations)
 
 	go func(ch1 <-chan map[string]int, ch2 <-chan *websocket.Conn) {
-		hyperparameters := <-ch1
-		worker := <-ch2
-		fmt.Println("Recieved new hyperparameters: " + fmt.Sprint(hyperparameters))
-		fmt.Println("Recieved new slave: " + fmt.Sprint(worker.RemoteAddr()))
-		tr.server.WorkerClients[worker].SendHyperparameters(hyperparameters)
+		for hyperparameters := range ch1 {
+			tr.server.WorkerClients[<-ch2].SendHyperparameters(hyperparameters)
+		}
 	}(tr.combinations, tr.workers)
 
 }
@@ -118,6 +116,13 @@ func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message
 	if len(tr.combinations) == 0 {
 		close(tr.combinations)
 		close(tr.workers)
+
+		for _, wc := range tr.server.WorkerClients {
+			wc.SendFinished()
+		}
+		for _, mc := range tr.server.MasterClients {
+			mc.SendFinished()
+		}
 		fmt.Println("Finished optimizing")
 	}
 }
