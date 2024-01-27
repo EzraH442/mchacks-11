@@ -1,7 +1,11 @@
-// when i receive a message from server
-const server = app.listen(1337);
-const io = require('socket.io')(server);
-socket.on('message', function (data) {
+// create a socket to port 8080 on the server
+const socket = new WebSocket("ws://localhost:8080/master");
+
+socket.onmessage = (event) => {
+    console.log(event.data);
+  };
+
+/*socket.on('message', function (data) {
     message = JSON.parse(data);
     if (data["id"]=="joined") {
     console.log(data);
@@ -35,3 +39,4 @@ socket.on('message', function (data) {
 );
 
 
+*/
