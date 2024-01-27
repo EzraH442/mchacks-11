@@ -1,0 +1,46 @@
+import './frontend.css';
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+ 
+export function InputWithButton() {
+  return (
+    <div className="flex w-full max-w-sm items-center space-x-2">
+      <Input type="email" placeholder="Email" />
+      <Button type="submit">Subscribe</Button>
+    </div>
+  )
+}
+
+socket.on('message', function (data) {
+    message = JSON.parse(data);
+    if (data["id"]=="joined") {
+    console.log(data);
+    //add a child to an element
+    var node = document.querySelector("#connected clients");
+    var textnode = document.createTextNode(data);
+    //set the id of the node
+    node.setAttribute("id", data);
+    node.appendChild(textnode);
+    }
+    if (data["id"]=="left") {
+        console.log(data);
+        //add a child to an element
+        var node = document.querySelector("#connectedclients");
+        var textnode = document.createTextNode(data);
+        //set the id of the node
+        node.setAttribute("id", data);
+        node.appendChild(textnode);
+    }
+    if (data["id"]=="epochnumber") {
+        console.log(data);
+        var node = document.querySelector("#epochnumber");
+        node.innerHTML = parseInt(node.innerHTML) + 1;
+    }
+    if (data["id"]=="bestaccuracy") {
+        console.log(data);
+        var node = document.querySelector("#bestaccuracy");
+        node.innerHTML = data["peepeepoopoo"];
+    }
+}
+);
