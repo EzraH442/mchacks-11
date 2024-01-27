@@ -82,16 +82,16 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 func main() {
 	var wg sync.WaitGroup
 
-	handlers := map[string]func(connection *websocket.Conn, message []byte){
+	pingpong := map[string]func(connection *websocket.Conn, message []byte){
 		"ping": pingHandler,
 		"pong": pongHandler,
 	}
 
-	s := socket.New(handlers)
+	s := socket.New(pingpong, pingpong)
 	Trainer := NewTrainer(s)
 
-	s.AddHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
-	s.AddHandler("ready-to-train", Trainer.readyToTrainHandler)
+	s.AddWorkerHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
+	s.AddWorkerHandler("ready-to-train", Trainer.readyToTrainHandler)
 
 	// "recieve-test-results": Trainer.recieveTestResultsHandler,
 	wg.Add(1)
@@ -102,10 +102,10 @@ func main() {
 	}()
 	fmt.Println("Server started on port 8080")
 
-	wg.Add(1)
-	go func() {
-		Trainer.Train(make(map[string][]int))
-	}()
+	// wg.Add(1)
+	// go func() {
+	// 	Trainer.Train(make(map[string][]int))
+	// }()
 	wg.Wait()
 }
 
