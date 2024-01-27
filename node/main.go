@@ -123,6 +123,7 @@ func pongHandler(connection *websocket.Conn, message []byte) {
 
 func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message []byte) {
 	tr.server.Clients[connection].Status = socket.Idle
+	fmt.Printf("Recieved test results from %s: %s\n", fmt.Sprint(connection.RemoteAddr()), string(message))
 	tr.slaves <- connection
 
 	if len(tr.combinations) == 0 {
