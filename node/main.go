@@ -21,9 +21,9 @@ type TextResponse struct {
 }
 
 func pingHandler(connection *websocket.Conn, message []byte) {
-	connection.WriteJSON(TextResponse{Message: "ping"})
+	connection.WriteJSON(TextResponse{Message: "pong"})
 }
 
 func pongHandler(connection *websocket.Conn, message []byte) {
-	connection.WriteJSON(TextResponse{Message: "pong"})
+	connection.WriteJSON(TextResponse{Message: "ping"})
 }
