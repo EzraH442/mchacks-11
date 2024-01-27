@@ -12,6 +12,16 @@ type Message struct {
 	ID string `json:"id"`
 }
 
+type TextMessage struct {
+	ID      string `json:"id"`
+	Message string `json:"message"`
+}
+
+type HyperparametersMessage struct {
+	ID              string         `json:"id"`
+	Hyperparameters map[string]int `json:"hyperparameters"`
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -20,13 +30,40 @@ var upgrader = websocket.Upgrader{
 	// },
 }
 
+type ClientStatus int
+
+const (
+	Idle ClientStatus = iota
+	Running
+	Finished
+)
+
+type Client struct {
+	Connection *websocket.Conn
+	Status     ClientStatus
+}
+
+func (c *Client) SendHyperparameters(hyperparameters map[string]int) {
+	if c.Status != Idle {
+		fmt.Printf("Client is not idle, cannot send hyperparameters")
+	}
+
+	c.Status = Running
+	c.Connection.WriteJSON(HyperparametersMessage{ID: "start-hyperparameters", Hyperparameters: hyperparameters})
+}
+
 type Server struct {
-	clients  map[*websocket.Conn]bool
-	handlers map[string]func(connection *websocket.Conn, message []byte)
+	Clients          map[*websocket.Conn]*Client
+	handlers         map[string]func(connection *websocket.Conn, message []byte)
+	availableClients chan string
 }
 
 func New(handlers map[string]func(connection *websocket.Conn, message []byte)) *Server {
-	return &Server{make(map[*websocket.Conn]bool), handlers}
+	return &Server{
+		Clients:          make(map[*websocket.Conn]*Client),
+		handlers:         handlers,
+		availableClients: make(chan string),
+	}
 }
 
 func (s *Server) Start() {
@@ -35,11 +72,18 @@ func (s *Server) Start() {
 	http.ListenAndServe(":8080", nil)
 }
 
+func (s *Server) AddHandler(id string, handler func(connection *websocket.Conn, message []byte)) {
+	s.handlers[id] = handler
+}
+
 func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 
 	connection, _ := upgrader.Upgrade(w, r, nil)
 
-	server.clients[connection] = true // Save the connection using it as a key
+	server.Clients[connection] = &Client{
+		Connection: connection,
+		Status:     Idle,
+	}
 
 	for {
 		messageType, message, err := connection.ReadMessage()
@@ -59,13 +103,13 @@ func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 		go server.handlers[m.ID](connection, message)
 	}
 
-	delete(server.clients, connection) // Removing the connection
+	delete(server.Clients, connection) // Removing the connection
 
 	connection.Close()
 }
 
 func (server *Server) WriteJSON(message interface{}) {
-	for conn := range server.clients {
-		conn.WriteJSON(message)
+	for c := range server.Clients {
+		server.Clients[c].Connection.WriteJSON(message)
 	}
 }
