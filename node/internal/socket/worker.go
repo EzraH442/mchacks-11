@@ -3,6 +3,7 @@ package socket
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,8 +16,17 @@ const (
 )
 
 type WorkerClient struct {
+	ID         string
 	Connection *websocket.Conn
 	Status     ClientStatus
+}
+
+func NewWorker(connection *websocket.Conn) *WorkerClient {
+	return &WorkerClient{
+		Status:     Idle,
+		ID:         uuid.NewString(),
+		Connection: connection,
+	}
 }
 
 func (c *WorkerClient) SendHyperparameters(hyperparameters map[string]int) {

@@ -49,10 +49,12 @@ func New(
 	}
 }
 
-func (s *Server) Start() {
+func (s *Server) Start() error {
 	http.HandleFunc("/master", s.masterHandler)
-	http.HandleFunc("/worker", s.workerHandler)
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/", s.workerHandler)
+	err := http.ListenAndServe(":8080", nil)
+	fmt.Print(err)
+	return err
 }
 
 func (s *Server) AddWorkerHandler(id string, handler func(connection *websocket.Conn, message []byte)) {
@@ -95,14 +97,11 @@ func (server *Server) masterHandler(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 	connection, _ := upgrader.Upgrade(w, r, nil)
+	worker := NewWorker(connection)
+	server.WorkerClients[connection] = worker
 
-	server.WorkerClients[connection] = &WorkerClient{
-		Connection: connection,
-		Status:     Idle,
-	}
-
-	for c := range server.MasterClients {
-		c.WriteJSON(TextMessage{ID: "new-client", Message: fmt.Sprint(connection.RemoteAddr())})
+	for _, mc := range server.MasterClients {
+		mc.SendClientConnectedMessage(worker.ID)
 	}
 
 	for {
@@ -123,13 +122,17 @@ func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 		go server.workerHandlers[m.ID](connection, message)
 	}
 
+	for _, mc := range server.MasterClients {
+		mc.SendClientDisconnectedMessage(worker.ID)
+	}
+
 	delete(server.WorkerClients, connection) // Removing the connection
 
 	connection.Close()
 }
 
 func (server *Server) WriteJSON(message interface{}) {
-	for c := range server.WorkerClients {
-		server.WorkerClients[c].Connection.WriteJSON(message)
+	for _, wc := range server.WorkerClients {
+		wc.Connection.WriteJSON(message)
 	}
 }
