@@ -1,14 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"socket"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
 
+func dummyChannel(ch chan map[string]int) {
+	ch <- map[string]int{
+		"a": 10,
+		"b": 10,
+		"c": 10,
+	}
+	ch <- map[string]int{
+		"a": 10,
+		"b": 10,
+		"c": 20,
+	}
+	ch <- map[string]int{
+		"a": 10,
+		"b": 10,
+		"c": 30,
+	}
+	ch <- map[string]int{
+		"a": 10,
+		"b": 20,
+		"c": 30,
+	}
+}
+
 type Trainer struct {
 	combinations chan map[string]int
-	slaves       chan *websocket.Conn
+	workers      chan *websocket.Conn
 	server       *socket.Server
 }
 
@@ -22,45 +47,55 @@ func NewTrainer(server *socket.Server) *Trainer {
 	return &Trainer{
 		server:       server,
 		combinations: make(chan map[string]int),
-		slaves:       make(chan *websocket.Conn),
+		workers:      make(chan *websocket.Conn),
 	}
 }
 
-func (tr *Trainer) Train() {
+func (tr *Trainer) Train(parameters map[string][]int) {
+	fmt.Println("Starting optimizing")
+	// TODO convert the map of hyperparameters into a channel of combinations to test
 
-	// convert the map of hyperparameters into a channel of combinations to test
+	tr.combinations = make(chan map[string]int)
+	go dummyChannel(tr.combinations)
 
 	go func(ch1 <-chan map[string]int, ch2 <-chan *websocket.Conn) {
-		for {
-			var hyperparameters map[string]int
-			var slave *websocket.Conn
-			select {
-			case h := <-ch1:
-				hyperparameters = h
-				// send hyperparameters to a slave
-			case con := <-ch2:
-				slave = con
-			}
-
-			tr.server.Clients[slave].SendHyperparameters(hyperparameters)
-		}
-	}(tr.combinations, tr.slaves)
+		hyperparameters := <-ch1
+		worker := <-ch2
+		fmt.Println("Recieved new hyperparameters: " + fmt.Sprint(hyperparameters))
+		fmt.Println("Recieved new slave: " + fmt.Sprint(worker.RemoteAddr()))
+		tr.server.WorkerClients[worker].SendHyperparameters(hyperparameters)
+	}(tr.combinations, tr.workers)
 
 }
 
 func main() {
-	handlers := map[string]func(connection *websocket.Conn, message []byte){
+	var wg sync.WaitGroup
+
+	pingpong := map[string]func(connection *websocket.Conn, message []byte){
 		"ping": pingHandler,
 		"pong": pongHandler,
 	}
 
-	s := socket.New(handlers)
+	s := socket.New(pingpong, pingpong)
 	Trainer := NewTrainer(s)
-	s.AddHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
+
+	s.AddWorkerHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
+	s.AddWorkerHandler("ready-to-train", Trainer.readyToTrainHandler)
 
 	// "recieve-test-results": Trainer.recieveTestResultsHandler,
-	s.Start()
+	wg.Add(1)
 
+	go func() {
+		s.Start()
+		defer wg.Done()
+	}()
+	fmt.Println("Server started on port 8080")
+
+	wg.Add(1)
+	go func() {
+		Trainer.Train(make(map[string][]int))
+	}()
+	wg.Wait()
 }
 
 type TextResponse struct {
@@ -76,11 +111,17 @@ func pongHandler(connection *websocket.Conn, message []byte) {
 }
 
 func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message []byte) {
-	tr.server.Clients[connection].Status = socket.Idle
-	tr.slaves <- connection
+	tr.server.WorkerClients[connection].Status = socket.Idle
+	fmt.Printf("Recieved test results from %s: %s\n", fmt.Sprint(connection.RemoteAddr()), string(message))
+	tr.workers <- connection
 
 	if len(tr.combinations) == 0 {
 		close(tr.combinations)
-		close(tr.slaves)
+		close(tr.workers)
+		fmt.Println("Finished optimizing")
 	}
+}
+
+func (tr *Trainer) readyToTrainHandler(connection *websocket.Conn, message []byte) {
+	tr.workers <- connection
 }
