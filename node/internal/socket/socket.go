@@ -9,8 +9,7 @@ import (
 )
 
 type Message struct {
-	Msg string `json:"msg"`
-	ID  string `json:"id"`
+	ID string `json:"id"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -30,8 +29,8 @@ func New(handlers map[string]func(connection *websocket.Conn, message []byte)) *
 	return &Server{make(map[*websocket.Conn]bool), handlers}
 }
 
-func (server *Server) Start() {
-	http.HandleFunc("/", server.handler)
+func (s *Server) Start() {
+	http.HandleFunc("/", s.handler)
 	fmt.Println("Server listening on port 8080")
 	http.ListenAndServe(":8080", nil)
 }
@@ -45,9 +44,8 @@ func (server *Server) handler(w http.ResponseWriter, r *http.Request) {
 	for {
 		messageType, message, err := connection.ReadMessage()
 		m := Message{}
-		err = json.Unmarshal(message, &m)
+		json.Unmarshal(message, &m)
 		fmt.Println(m.ID)
-		fmt.Println(m.Msg)
 		fmt.Println(string(message))
 
 		if err != nil || messageType == websocket.CloseMessage {
