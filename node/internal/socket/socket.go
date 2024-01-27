@@ -32,7 +32,7 @@ var upgrader = websocket.Upgrader{
 
 type Server struct {
 	MasterClients  map[*websocket.Conn]*MasterClient
-	Clients        map[*websocket.Conn]*WorkerClient
+	WorkerClients  map[*websocket.Conn]*WorkerClient
 	workerHandlers map[string]func(connection *websocket.Conn, message []byte)
 	masterHandlers map[string]func(connection *websocket.Conn, message []byte)
 }
@@ -42,7 +42,7 @@ func New(
 	masterHandlers map[string]func(connection *websocket.Conn, message []byte),
 ) *Server {
 	return &Server{
-		Clients:        make(map[*websocket.Conn]*WorkerClient),
+		WorkerClients:  make(map[*websocket.Conn]*WorkerClient),
 		MasterClients:  make(map[*websocket.Conn]*MasterClient),
 		workerHandlers: workerHandlers,
 		masterHandlers: masterHandlers,
@@ -88,7 +88,7 @@ func (server *Server) masterHandler(w http.ResponseWriter, r *http.Request) {
 		go server.workerHandlers[m.ID](connection, message)
 	}
 
-	delete(server.Clients, connection) // Removing the connection
+	delete(server.WorkerClients, connection) // Removing the connection
 
 	connection.Close()
 }
@@ -96,7 +96,7 @@ func (server *Server) masterHandler(w http.ResponseWriter, r *http.Request) {
 func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 	connection, _ := upgrader.Upgrade(w, r, nil)
 
-	server.Clients[connection] = &WorkerClient{
+	server.WorkerClients[connection] = &WorkerClient{
 		Connection: connection,
 		Status:     Idle,
 	}
@@ -123,13 +123,13 @@ func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 		go server.workerHandlers[m.ID](connection, message)
 	}
 
-	delete(server.Clients, connection) // Removing the connection
+	delete(server.WorkerClients, connection) // Removing the connection
 
 	connection.Close()
 }
 
 func (server *Server) WriteJSON(message interface{}) {
-	for c := range server.Clients {
-		server.Clients[c].Connection.WriteJSON(message)
+	for c := range server.WorkerClients {
+		server.WorkerClients[c].Connection.WriteJSON(message)
 	}
 }
