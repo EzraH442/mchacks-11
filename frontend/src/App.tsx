@@ -47,7 +47,13 @@ function App() {
     connected,
     sendJsonMessage,
     resultsStatus,
-  } = useMasterWebSocket({ onRecieveResults: onRecieveResult });
+  } = useMasterWebSocket({
+    onRecieveResults: onRecieveResult,
+    url:
+      process.env.NODE_ENV === 'production'
+        ? 'wss://mchacks11.ezrahuang.com/master-socket'
+        : 'ws://localhost:8080/master',
+  });
 
   const [parametersToTrain, setParametersToTrain] = useState<
     HyperparameterData[]

@@ -13,11 +13,12 @@ import { HyperparameterData } from '../App';
 import { hashHyperparameterData } from '../lib/utils';
 
 interface IUserMasterWebSocket {
+  url: string;
   onRecieveResults: (result: any) => void;
 }
 
 const useMasterWebSocket = (params: IUserMasterWebSocket) => {
-  const { onRecieveResults } = params;
+  const { onRecieveResults, url } = params;
 
   const namesContext = useContext(NameContext);
   const [training, setTraining] = useState(false);
@@ -39,7 +40,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
     return namesContext.names[ip];
   };
-  const { sendJsonMessage } = useWebSocket('ws://localhost:8080/master', {
+  const { sendJsonMessage } = useWebSocket(url, {
     share: true,
     shouldReconnect: () => true,
     onOpen: (event) => {
