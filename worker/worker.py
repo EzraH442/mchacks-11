@@ -112,6 +112,6 @@ class Worker:
                     break
 
 
-NewSocket = Worker("ws://localhost:8080")
-# NewSocket = Worker("wss://mchacks11.ezrahuang.com/client-socket")
+# jNewSocket = Worker("ws://localhost:8080")
+NewSocket = Worker("wss://mchacks11.ezrahuang.com/client-socket")
 asyncio.run(NewSocket.wait_and_reply())
