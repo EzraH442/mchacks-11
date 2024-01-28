@@ -148,10 +148,15 @@ func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message
 	// 	}
 	// 	fmt.Println("Finished optimizing")
 	// } else {
-	tr.workers <- worker
+
+	if tr.Training {
+		tr.workers <- worker
+	}
 	//}
 }
 
 func (tr *Trainer) readyToTrainHandler(connection *websocket.Conn, message []byte) {
-	tr.workers <- tr.server.WorkerClients[connection]
+	if tr.Training {
+		tr.workers <- tr.server.WorkerClients[connection]
+	}
 }
