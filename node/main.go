@@ -131,6 +131,7 @@ func main() {
 		}
 	})
 	s.AddMasterHandler("finished", func(connection *websocket.Conn, message []byte) {
+		fmt.Print("Recieved finished message from master")
 		trainer.Training = false
 
 		close(trainer.combinations)

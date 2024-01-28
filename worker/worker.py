@@ -38,7 +38,7 @@ def create_custom_nn(num_layers, layer_neurons, input_shape, output_shape, epsi)
 
 
 def test_model(chromosome):
-    model = create_custom_nn(int(chromosome[0]), chromosome[1], 784, 10, float[2])
+    model = create_custom_nn(int(chromosome[0]), chromosome[1], 784, 10, float(chromosome[2]))
     custom_optimizer = Adam(learning_rate=(float(chromosome[3]) / 50))
 
     # Compile the model with the custom optimizer
@@ -112,6 +112,6 @@ class Worker:
                     break
 
 
-#NewSocket = Worker("ws://localhost:8080")
-NewSocket = Worker("wss://mchacks11.ezrahuang.com/client-socket")
+NewSocket = Worker("ws://localhost:8080")
+#NewSocket = Worker("wss://mchacks11.ezrahuang.com/client-socket")
 asyncio.run(NewSocket.wait_and_reply())

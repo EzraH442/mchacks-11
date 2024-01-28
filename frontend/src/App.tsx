@@ -23,6 +23,7 @@ function App() {
   const [bestParameters, setBestParameters] = useState<HyperparameterData>(
     EmptyHyperparameterData,
   );
+  const [lastHyp, setLastHyp] = useState<string>('');
 
   const onRecieveResult = (data: any) => {
     const [loss, accuracy] = data.accuracy;
@@ -36,18 +37,19 @@ function App() {
       setBestResult(accuracy);
       setBestParameters(hyperparameters);
     }
+    setTotalResults((prev) => prev + 1);
 
-    setTotalResults(totalResults + 1);
-
-    if (totalResults === parametersToTrain.length) {
+    if (hashHyperparameterData(hyperparameters) === lastHyp) {
       console.log('finished');
       sendJsonMessage({ ID: 'finished' });
+      setTraining(false);
     }
   };
 
   const {
     clients,
     training,
+    setTraining,
     startTraining,
     connected,
     sendJsonMessage,
@@ -182,17 +184,16 @@ function App() {
               </div>
             </div>
           </div>
-          {training && (
-            <img
-              src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWo2cmMzd2R6MmZhbWlrM2Uzc3NnMHB1MmN4M3lxcDAzbjN3MnBpdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GeimqsH0TLDt4tScGw/giphy.gif"
-              alt="bong cat"
-            />
-          )}
           <Button
             className="mt-4 mb-4"
             variant="outline"
             disabled={training || !connected}
             onClick={() => {
+              setLastHyp(
+                hashHyperparameterData(
+                  parametersToTrain[parametersToTrain.length - 1],
+                ),
+              );
               startTraining(parametersToTrain);
             }}
           >

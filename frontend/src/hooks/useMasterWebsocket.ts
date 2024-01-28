@@ -163,6 +163,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
   return {
     training,
+    setTraining,
     clients,
     connected,
     startTraining,
