@@ -4,8 +4,15 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/goombaio/namegenerator"
 	"github.com/gorilla/websocket"
 )
+
+var ng namegenerator.Generator
+
+func init() {
+	ng = namegenerator.NewNameGenerator(42)
+}
 
 type ClientStatus int
 
@@ -16,6 +23,7 @@ const (
 
 type WorkerClient struct {
 	ID         string
+	Name       string
 	Connection *websocket.Conn
 	Status     ClientStatus
 }
@@ -32,6 +40,7 @@ func NewWorker(connection *websocket.Conn) *WorkerClient {
 		Status:     Idle,
 		ID:         uuid.NewString(),
 		Connection: connection,
+		Name:       ng.Generate(),
 	}
 }
 

@@ -110,6 +110,7 @@ func main() {
 				WorkerID: worker.ID,
 				IP:       worker.Connection.RemoteAddr().String(),
 				Status:   fmt.Sprint(worker.Status),
+				Name:     worker.Name,
 			})
 		}
 

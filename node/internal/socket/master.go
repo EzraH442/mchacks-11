@@ -1,6 +1,8 @@
 package socket
 
 import (
+	"fmt"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -11,6 +13,7 @@ type MasterClient struct {
 type Worker struct {
 	WorkerID string `json:"worker_id"`
 	IP       string `json:"ip"`
+	Name     string `json:"name"`
 	Status   string `json:"status"`
 }
 
@@ -50,8 +53,13 @@ func (c *MasterClient) SendGetAllClientsMessage(Workers []Worker) {
 
 func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
 	c.Connection.WriteJSON(ClientConnectionStatusMessage{
-		ID:     "client-connected",
-		Worker: Worker{WorkerID: worker.ID, IP: worker.Connection.RemoteAddr().String(), Status: "idle"},
+		ID: "client-connected",
+		Worker: Worker{
+			WorkerID: worker.ID,
+			IP:       worker.Connection.RemoteAddr().String(),
+			Status:   fmt.Sprint(worker.Status),
+			Name:     worker.Name,
+		},
 	})
 }
 
@@ -73,8 +81,13 @@ func (c *MasterClient) SendClientFinishedTrainingMessage(worker *WorkerClient, r
 
 func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
 	c.Connection.WriteJSON(ClientConnectionStatusMessage{
-		ID:     "client-disconnected",
-		Worker: Worker{WorkerID: worker.ID, IP: worker.Connection.RemoteAddr().String(), Status: "idle"},
+		ID: "client-disconnected",
+		Worker: Worker{
+			WorkerID: worker.ID,
+			IP:       worker.Connection.RemoteAddr().String(),
+			Status:   fmt.Sprint(worker.Status),
+			Name:     worker.Name,
+		},
 	})
 }
 

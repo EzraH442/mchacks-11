@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useState } from 'react';
 import {
   Client,
   ClientStatus,
@@ -7,8 +7,6 @@ import {
 } from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
-import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
-import NameContext from './useNameContext';
 import { HyperparameterData } from '../App';
 import { hashHyperparameterData } from '../lib/utils';
 
@@ -20,7 +18,6 @@ interface IUserMasterWebSocket {
 const useMasterWebSocket = (params: IUserMasterWebSocket) => {
   const { onRecieveResults, url } = params;
 
-  const namesContext = useContext(NameContext);
   const [training, setTraining] = useState(false);
   const [connected, setConnected] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -31,15 +28,6 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
   const { toast } = useToast();
 
-  const generateRandomName = (ip: string) => {
-    if (!namesContext.names[ip]) {
-      namesContext.names[ip] = uniqueNamesGenerator({
-        dictionaries: [colors, animals],
-      }).replace('_', ' ');
-    }
-
-    return namesContext.names[ip];
-  };
   const { sendJsonMessage } = useWebSocket(url, {
     share: true,
     shouldReconnect: () => true,
@@ -74,10 +62,12 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
           setClients(
             workers.map((worker: any) => ({
               id: worker.worker_id,
+              name: worker.name,
               ip: worker.ip,
               status:
-                worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
-              name: generateRandomName(worker.ip),
+                worker.status === '0'
+                  ? ClientStatus.Idle
+                  : ClientStatus.Working,
             })),
           );
           break;
@@ -90,11 +80,11 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
               id: worker.worker_id,
               ip: worker.ip,
               status:
-                worker.status === 'idle'
+                worker.status === '0'
                   ? ClientStatus.Idle
                   : ClientStatus.Working,
               currentTask: EmptyHyperparameterData,
-              name: generateRandomName(worker.ip),
+              name: worker.name,
             },
           ]);
           break;
