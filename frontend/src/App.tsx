@@ -133,7 +133,7 @@ function App() {
             <Button
           className="mt-4 bg-red-500 text-white hover:bg-red-800"
           variant="outline"
-          disabled={!parametersToTrain && training}
+          disabled={training}
           onClick={() => {
             clear();
           }}
