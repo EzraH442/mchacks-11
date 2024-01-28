@@ -111,7 +111,7 @@ func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 	server.WorkerClients[connection] = worker
 
 	for _, mc := range server.MasterClients {
-		mc.SendClientConnectedMessage(worker.ID)
+		mc.SendClientConnectedMessage(worker)
 	}
 
 	for {
@@ -135,7 +135,7 @@ func (server *Server) workerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, mc := range server.MasterClients {
-		mc.SendClientDisconnectedMessage(worker.ID)
+		mc.SendClientDisconnectedMessage(worker)
 	}
 
 	delete(server.WorkerClients, connection) // Removing the connection
