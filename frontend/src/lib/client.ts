@@ -31,3 +31,9 @@ export const EmptyHyperparameterData: HyperparameterData = {
   epsilon: 0,
   learningRate: 0,
 };
+
+export enum ResultsStatus {
+  NotStarted,
+  Started,
+  Finished,
+}

@@ -2,13 +2,18 @@ import { HyperparameterData } from '../App';
 
 interface IHyperparamsViewProps {
   hyperparameters: HyperparameterData;
+  pending?: boolean;
 }
 
 const HyperparametersView: React.FC<IHyperparamsViewProps> = ({
   hyperparameters,
+  pending,
 }) => {
   return (
-    <div className="flex flex-col bg-gray-100 px-1.5 py-1 rounded-md">
+    <div
+      className={`flex flex-col px-1.5 py-1 rounded-md
+    ${pending ? 'bg-yellow-200' : 'bg-gray-100'}`}
+    >
       <p className="">Layers: {hyperparameters.layers}</p>
       <p className="">
         Neurons per layer: {hyperparameters.neuronsPerLayer.join(', ')}

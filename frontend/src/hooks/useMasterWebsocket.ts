@@ -1,10 +1,16 @@
 import { useContext, useState } from 'react';
-import { Client, ClientStatus, EmptyHyperparameterData } from '../lib/client';
+import {
+  Client,
+  ClientStatus,
+  EmptyHyperparameterData,
+  ResultsStatus,
+} from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
 import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
 import NameContext from './useNameContext';
 import { HyperparameterData } from '../App';
+import { hashHyperparameterData } from '../lib/utils';
 
 interface IUserMasterWebSocket {
   onRecieveResults: (result: any) => void;
@@ -17,9 +23,14 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
   const [training, setTraining] = useState(false);
   const [connected, setConnected] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
+
+  const [resultsStatus, setResultsStatus] = useState<
+    Record<string, ResultsStatus>
+  >({});
+
   const { toast } = useToast();
 
-  const generaetRandomName = (ip: string) => {
+  const generateRandomName = (ip: string) => {
     if (!namesContext.names[ip]) {
       namesContext.names[ip] = uniqueNamesGenerator({
         dictionaries: [colors, animals],
@@ -65,7 +76,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
               ip: worker.ip,
               status:
                 worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
-              name: generaetRandomName(worker.ip),
+              name: generateRandomName(worker.ip),
             })),
           );
           break;
@@ -82,7 +93,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
                   ? ClientStatus.Idle
                   : ClientStatus.Working,
               currentTask: EmptyHyperparameterData,
-              name: generaetRandomName(worker.ip),
+              name: generateRandomName(worker.ip),
             },
           ]);
           break;
@@ -94,7 +105,13 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
         }
         case 'client-started-training': {
           const workerId = data.worker_id;
-          const hyperparameters = data.parameters;
+          const hyperparameters = data.parameters as HyperparameterData;
+
+          setResultsStatus((prev) => ({
+            ...prev,
+            [hashHyperparameterData(hyperparameters)]: ResultsStatus.Started,
+          }));
+
           setClients((prev) =>
             prev.map((client) =>
               client.id === workerId
@@ -119,6 +136,13 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
                 : client,
             ),
           );
+
+          setResultsStatus((prev) => ({
+            ...prev,
+            [hashHyperparameterData(data.hyperparameters)]:
+              ResultsStatus.Finished,
+          }));
+
           onRecieveResults(result);
           break;
         }
@@ -151,6 +175,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     connected,
     startTraining,
     sendJsonMessage,
+    resultsStatus,
   };
 };
 

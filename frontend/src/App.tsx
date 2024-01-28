@@ -5,9 +5,9 @@ import useMasterWebSocket from './hooks/useMasterWebsocket';
 import { useEffect, useState } from 'react';
 import HypForm, { formSchema } from './components/form';
 import { z } from 'zod';
-import { round } from './lib/utils';
+import { hashHyperparameterData, round } from './lib/utils';
 import HyperparametersView from './components/HyperparamsView';
-import { EmptyHyperparameterData } from './lib/client';
+import { EmptyHyperparameterData, ResultsStatus } from './lib/client';
 
 export interface HyperparameterData {
   layers: number;
@@ -30,7 +30,7 @@ function App() {
 
     setResults((prev) => ({
       ...prev,
-      [JSON.stringify(hyperparameters)]: accuracy,
+      [hashHyperparameterData(hyperparameters)]: accuracy,
     }));
     if (data.accuracy[1] > bestResult) {
       setBestResult(accuracy);
@@ -40,8 +40,14 @@ function App() {
     console.log(results);
   };
 
-  const { clients, training, startTraining, connected, sendJsonMessage } =
-    useMasterWebSocket({ onRecieveResults: onRecieveResult });
+  const {
+    clients,
+    training,
+    startTraining,
+    connected,
+    sendJsonMessage,
+    resultsStatus,
+  } = useMasterWebSocket({ onRecieveResults: onRecieveResult });
 
   const [parametersToTrain, setParametersToTrain] = useState<
     HyperparameterData[]
@@ -65,8 +71,10 @@ function App() {
         ]);
       }
     }
-    console.log(parametersToTrain);
   };
+
+  console.log(parametersToTrain);
+  console.log(resultsStatus);
 
   return (
     <div className="w-full h-full px-4 ">
@@ -118,12 +126,23 @@ function App() {
             <div className="overflow-y-scroll max-h-[600px]">
               <div className="flex flex-col px-1.5 py-1 rounded-md space-y-2">
                 {parametersToTrain
-                  .filter((params, i) => !results[JSON.stringify(params)])
-                  .map((params) => (
-                    <div>
-                      <HyperparametersView hyperparameters={params} />
-                    </div>
-                  ))}
+                  .filter(
+                    (params, i) =>
+                      resultsStatus[hashHyperparameterData(params)] !==
+                      ResultsStatus.Finished,
+                  )
+                  .map((params) => {
+                    const status =
+                      resultsStatus[hashHyperparameterData(params)];
+                    return (
+                      <div key={hashHyperparameterData(params)}>
+                        <HyperparametersView
+                          hyperparameters={params}
+                          pending={status === ResultsStatus.Started}
+                        />
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>

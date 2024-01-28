@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { HyperparameterData } from '../App';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -19,4 +20,16 @@ export function formatNeuronsPerLayer(neuronsPerLayer: number[]) {
 
 export function round(num: number, places: number = 2) {
   return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
+}
+
+export function hashHyperparameterData(data: HyperparameterData) {
+  return (
+    data.epsilon +
+    '-' +
+    data.learningRate +
+    '-' +
+    data.layers +
+    '--' +
+    data.neuronsPerLayer.join('-')
+  );
 }
