@@ -35,7 +35,7 @@ func NewWorker(connection *websocket.Conn) *WorkerClient {
 	}
 }
 
-func (c *WorkerClient) SendHyperparameters(hyperparameters Dummy) {
+func (c *WorkerClient) SendHyperparameters(hyperparameters interface{}) {
 	if c.Status != Idle {
 		fmt.Printf("Client is not idle, cannot send hyperparameters")
 		return

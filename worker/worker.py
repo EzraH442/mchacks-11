@@ -92,10 +92,10 @@ class Worker:
 
                     if data["id"] == "start-hyperparameters":
                         hyperparameters = data["hyperparameters"]
-                        num_layers = hyperparameters["num_layers"]
-                        layer_neurons = hyperparameters["layer_neurons"]
-                        epsilon = hyperparameters["epsi"]
-                        learning_rate = hyperparameters["learning_rate"]
+                        num_layers = hyperparameters["layers"]
+                        layer_neurons = hyperparameters["neuronsPerLayer"]
+                        epsilon = hyperparameters["epsilon"]
+                        learning_rate = hyperparameters["learningRate"]
 
                         chromomes, accuracy = await self.begin_training(
                             num_layers, layer_neurons, epsilon, learning_rate

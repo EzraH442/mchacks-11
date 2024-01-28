@@ -20,8 +20,9 @@ type ClientConnectionStatusMessage struct {
 }
 
 type ClientStartedTrainingMessage struct {
-	ID       string `json:"id"`
-	WorkerID string `json:"worker_id"`
+	ID         string      `json:"id"`
+	WorkerID   string      `json:"worker_id"`
+	Parameters interface{} `json:"parameters"`
 }
 
 type ClientFinishedTrainingMessage struct {
@@ -54,10 +55,11 @@ func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
 	})
 }
 
-func (c *MasterClient) SendClientStartedTrainingMessage(worker *WorkerClient) {
+func (c *MasterClient) SendClientStartedTrainingMessage(worker *WorkerClient, parameters interface{}) {
 	c.Connection.WriteJSON(ClientStartedTrainingMessage{
-		ID:       "client-started-training",
-		WorkerID: worker.ID,
+		ID:         "client-started-training",
+		WorkerID:   worker.ID,
+		Parameters: parameters,
 	})
 }
 
