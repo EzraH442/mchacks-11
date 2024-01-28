@@ -88,147 +88,155 @@ function App() {
     setTotalResults(0);
     setBestResult(0);
     setBestParameters(EmptyHyperparameterData);
-  }
+  };
 
   console.log(parametersToTrain);
   console.log(resultsStatus);
 
   return (
-    <div className="w-full h-full px-4 ">
-      <Toaster />
-      <h1 className="text-2xl underline">DISTRIBUTED HYPERPARAMETER TUNING</h1>
-      <div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            sendJsonMessage({ ID: 'ping' });
-          }}
-        >
-          Ping
-        </Button>
-        <div className="flex space-x-4">
-          <div className="flex flex-col">
-            <span className="font-bold">Connection status:</span>
-
-            <span
-              className={`${
-                connected
-                  ? 'text-green-900 bg-green-300'
-                  : 'bg-red-500 text-white'
-              } px-2 py-1 rounded-lg text-center w-36`}
-            >
-              {connected ? 'Connected' : 'Disconnected'}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold">Connected clients:</span>
-            <span>{clients.length}</span>
-          </div>
-        </div>
-
-        <div className="my-4" />
-        <h2 className="font-bold">Hyperparameter settings:</h2>
-        <div className="flex space-x-4">
-          <div
-            style={{ width: 500 }}
-            className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
+    <div>
+      <div className="w-full bg-red-700 px-4 text-white font-sans">
+        <h1 className="text-2xl py-4">Distributed Hyperparameter Tuning</h1>
+      </div>
+      <div className="w-full h-full px-4 mt-4">
+        <Toaster />
+        <div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              sendJsonMessage({ ID: 'ping' });
+            }}
           >
-            <HypForm onSubmit={addParameters} disabled={training} />
-            <Button
-          className="mt-4 bg-red-500 text-white hover:bg-red-800"
-          variant="outline"
-          disabled={training}
-          onClick={() => {
-            clear();
-          }}
-        >
-          Clear
-        </Button>
-          </div>
-          <div
-            className="border bg-gray-50 border-dashed rounded-md py-2 border-gray-200 items-center"
-            style={{ width: 500 }}
-          >
-            <h2 className="font-bold text-center">Hyperparameters to train:</h2>
-            <div className="overflow-y-scroll max-h-[600px]">
-              <div className="flex flex-col px-1.5 py-1 rounded-md space-y-2">
-                {parametersToTrain
-                  .filter(
-                    (params, i) =>
-                      resultsStatus[hashHyperparameterData(params)] !==
-                      ResultsStatus.Finished,
-                  )
-                  .map((params) => {
-                    const status =
-                      resultsStatus[hashHyperparameterData(params)];
-                    return (
-                      <div key={hashHyperparameterData(params)}>
-                        <HyperparametersView
-                          hyperparameters={params}
-                          pending={status === ResultsStatus.Started}
-                        />
-                      </div>
-                    );
-                  })}
-              </div>
+            Ping
+          </Button>
+          <div className="flex space-x-4">
+            <div className="flex flex-col">
+              <span className="font-bold">Connection status:</span>
+
+              <span
+                className={`${
+                  connected
+                    ? 'text-green-900 bg-green-300'
+                    : 'bg-red-500 text-white'
+                } px-2 py-1 rounded-lg text-center w-36`}
+              >
+                {connected ? 'Connected' : 'Disconnected'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold">Connected clients:</span>
+              <span>{clients.length}</span>
             </div>
           </div>
-        </div>
-        {training &&
-                ( <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWo2cmMzd2R6MmZhbWlrM2Uzc3NnMHB1MmN4M3lxcDAzbjN3MnBpdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GeimqsH0TLDt4tScGw/giphy.gif" alt="bong cat" /> )}
-        <Button
-          className="mt-4 mb-4"
-          variant="outline"
-          disabled={training || !connected}
-          onClick={() => {
-            startTraining(parametersToTrain);
-          }}
-        >
-          Start Training
-        </Button>
-      </div>
-      <div className="flex space-x-3">
-        <div
-          style={{ width: 400 }}
-          className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
-        >
-          <h2 className="text-xl">Connected workers</h2>
 
           <div className="my-4" />
-          <div className="flex space-y-2 px-2 flex-col">
-            {clients.map((client) => (
-              <ClientCard key={client.id} client={client} />
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200">
-            <h2 className=" text-xl">Progress</h2>
-
-            <div className="my-4" />
-            <div className="flex space-x-2">
-              <div className="flex flex-col min-w-60">
-                <span className="font-bold">Hyperparameters Remaining</span>
-                <span>{parametersToTrain.length - totalResults}</span>
-              </div>
-              <div className="flex flex-col min-w-36">
-                <span className="font-bold">Best Accuracy</span>
-                <span>{round(bestResult, 3)}</span>
-              </div>
-              <div className="flex flex-col min-w-36">
-                <span className="font-bold">Hyperparameters</span>
-
-                {totalResults !== 0 ? (
-                  <HyperparametersView hyperparameters={bestParameters} />
-                ) : (
-                  <span>No results yet</span>
-                )}
-
-                
-
+          <div className="flex space-x-4">
+            <div>
+              <h2 className="font-bold">Hyperparameter settings:</h2>
+              <div
+                style={{ width: 500 }}
+                className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
+              >
+                <HypForm onSubmit={addParameters} disabled={training} />
+                <Button
+                  className="mt-4 bg-red-500 text-white hover:bg-red-800"
+                  variant="outline"
+                  disabled={training}
+                  onClick={() => {
+                    clear();
+                  }}
+                >
+                  Clear
+                </Button>
               </div>
             </div>
-            {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
+            <div>
+              <h2 className="font-bold">Hyperparameters to train:</h2>
+              <div
+                className="border bg-gray-50 border-dashed rounded-md py-2 border-gray-200 items-center"
+                style={{ width: 500 }}
+              >
+                <div className="overflow-y-scroll h-[688px]">
+                  <div className="flex flex-col px-1.5 py-1 rounded-md space-y-2">
+                    {parametersToTrain
+                      .filter(
+                        (params, i) =>
+                          resultsStatus[hashHyperparameterData(params)] !==
+                          ResultsStatus.Finished,
+                      )
+                      .map((params) => {
+                        const status =
+                          resultsStatus[hashHyperparameterData(params)];
+                        return (
+                          <div key={hashHyperparameterData(params)}>
+                            <HyperparametersView
+                              hyperparameters={params}
+                              pending={status === ResultsStatus.Started}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {training && (
+            <img
+              src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWo2cmMzd2R6MmZhbWlrM2Uzc3NnMHB1MmN4M3lxcDAzbjN3MnBpdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GeimqsH0TLDt4tScGw/giphy.gif"
+              alt="bong cat"
+            />
+          )}
+          <Button
+            className="mt-4 mb-4"
+            variant="outline"
+            disabled={training || !connected}
+            onClick={() => {
+              startTraining(parametersToTrain);
+            }}
+          >
+            Start Training
+          </Button>
+        </div>
+        <div className="flex space-x-3">
+          <div
+            style={{ width: 400 }}
+            className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
+          >
+            <h2 className="text-xl">Connected workers</h2>
+
+            <div className="my-4" />
+            <div className="flex space-y-2 px-2 flex-col">
+              {clients.map((client) => (
+                <ClientCard key={client.id} client={client} />
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200">
+              <h2 className=" text-xl">Progress</h2>
+
+              <div className="my-4" />
+              <div className="flex space-x-2">
+                <div className="flex flex-col min-w-60">
+                  <span className="font-bold">Hyperparameters Remaining</span>
+                  <span>{parametersToTrain.length - totalResults}</span>
+                </div>
+                <div className="flex flex-col min-w-36">
+                  <span className="font-bold">Best Accuracy</span>
+                  <span>{round(bestResult, 3)}</span>
+                </div>
+                <div className="flex flex-col min-w-36">
+                  <span className="font-bold">Hyperparameters</span>
+
+                  {totalResults !== 0 ? (
+                    <HyperparametersView hyperparameters={bestParameters} />
+                  ) : (
+                    <span>No results yet</span>
+                  )}
+                </div>
+              </div>
+              {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
           <!-- epoch number-->
           <tr>
               <td>Epoch:</td>
@@ -240,6 +248,7 @@ function App() {
               <td id="bestaccuracy"></td>
           </tr>
       </table> */}
+            </div>
           </div>
         </div>
       </div>
