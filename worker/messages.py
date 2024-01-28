@@ -10,5 +10,5 @@ def newReadyToTrainMessage():
 
 def newSendResultsMessage(accuracy, chromosomes):
     return json.dumps(
-        {"ID": "recieve-test-results", "accuracy": results, "chromosomes": chromosomes}
+        {"ID": "recieve-test-results", "accuracy": accuracy, "chromosomes": chromosomes}
     )
