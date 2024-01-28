@@ -59,9 +59,9 @@ def test_model(chromosome):
     )
 
     # Evaluate the model on the test set
-    test_loss, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
+    chromosome, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
 
-    return test_accuracy
+    return chromosome, test_accuracy
 
 
 def job_fail(err):
@@ -96,10 +96,12 @@ class Worker:
                         epsilon = hyperparameters["epsi"]
                         learning_rate = hyperparameters["learning_rate"]
 
-                        output = await self.begin_training(
+                        chromomes, accuracy = await self.begin_training(
                             num_layers, layer_neurons, epsilon, learning_rate
                         )
-                        await websocket.send(messages.newSendResultsMessage(output))
+                        await websocket.send(
+                            messages.newSendResultsMessage(accuracy, chromomes)
+                        )
                     # genetic.genetic_algorithm()
 
                 except websockets.ConnectionClosed:
