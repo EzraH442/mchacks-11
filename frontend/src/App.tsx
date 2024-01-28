@@ -5,7 +5,7 @@ import useMasterWebSocket from './hooks/useMasterWebsocket';
 import { useEffect, useState } from 'react';
 import HypForm, { formSchema } from './components/form';
 import { z } from 'zod';
-import { formatNeuronsPerLayer, round } from './lib/utils';
+import { round } from './lib/utils';
 import HyperparametersView from './components/HyperparamsView';
 import { EmptyHyperparameterData } from './lib/client';
 
@@ -18,7 +18,7 @@ export interface HyperparameterData {
 
 function App() {
   const [results, setResults] = useState<Record<string, number>>({});
-  const [totalResults, setTotalResutls] = useState(0);
+  const [totalResults, setTotalResults] = useState(0);
   const [bestResult, setBestResult] = useState<number>(0);
   const [bestParameters, setBestParameters] = useState<HyperparameterData>(
     EmptyHyperparameterData,
@@ -35,7 +35,7 @@ function App() {
     if (data.accuracy[1] > bestResult) {
       setBestResult(accuracy);
       setBestParameters(hyperparameters);
-      setTotalResutls(totalResults + 1);
+      setTotalResults(totalResults + 1);
     }
     console.log(results);
   };
@@ -103,9 +103,29 @@ function App() {
 
         <div className="my-4" />
         <h2 className="font-bold">Hyperparameter settings:</h2>
-        <div>
-          <div style={{ width: 500 }}>
+        <div className="flex space-x-4">
+          <div
+            style={{ width: 500 }}
+            className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
+          >
             <HypForm onSubmit={addParameters} disabled={training} />
+          </div>
+          <div
+            className="border bg-gray-50 border-dashed rounded-md py-2 border-gray-200 items-center"
+            style={{ width: 500 }}
+          >
+            <h2 className="font-bold text-center">Hyperparameters to train:</h2>
+            <div className="overflow-y-scroll max-h-[600px]">
+              <div className="flex flex-col px-1.5 py-1 rounded-md space-y-2">
+                {parametersToTrain
+                  .filter((params, i) => !results[JSON.stringify(params)])
+                  .map((params) => (
+                    <div>
+                      <HyperparametersView hyperparameters={params} />
+                    </div>
+                  ))}
+              </div>
+            </div>
           </div>
         </div>
         <Button
