@@ -18,8 +18,8 @@ type TextMessage struct {
 }
 
 type HyperparametersMessage struct {
-	ID              string         `json:"id"`
-	Hyperparameters map[string]int `json:"hyperparameters"`
+	ID              string `json:"id"`
+	Hyperparameters Dummy  `json:"hyperparameters"`
 }
 
 var upgrader = websocket.Upgrader{

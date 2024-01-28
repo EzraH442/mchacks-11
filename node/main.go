@@ -8,31 +8,19 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func dummyChannel(ch chan map[string]int) {
-	ch <- map[string]int{
-		"a": 10,
-		"b": 10,
-		"c": 10,
-	}
-	ch <- map[string]int{
-		"a": 10,
-		"b": 10,
-		"c": 20,
-	}
-	ch <- map[string]int{
-		"a": 10,
-		"b": 10,
-		"c": 30,
-	}
-	ch <- map[string]int{
-		"a": 10,
-		"b": 20,
-		"c": 30,
+func dummyChannel(ch chan socket.Dummy) {
+	for i := 0; i < 10; i++ {
+		ch <- socket.Dummy{
+			NumLayers:    1,
+			LayerNeurons: []int{128},
+			Epsilon:      0.5,
+			LearningRate: 0.01,
+		}
 	}
 }
 
 type Trainer struct {
-	combinations chan map[string]int
+	combinations chan socket.Dummy
 	workers      chan *websocket.Conn
 	server       *socket.Server
 }
@@ -46,7 +34,7 @@ type Trainer struct {
 func NewTrainer(server *socket.Server) *Trainer {
 	return &Trainer{
 		server:       server,
-		combinations: make(chan map[string]int),
+		combinations: make(chan socket.Dummy),
 		workers:      make(chan *websocket.Conn),
 	}
 }
@@ -55,10 +43,10 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 	fmt.Println("Starting optimizing")
 	// TODO convert the map of hyperparameters into a channel of combinations to test
 
-	tr.combinations = make(chan map[string]int)
+	tr.combinations = make(chan socket.Dummy, 8192)
 	go dummyChannel(tr.combinations)
 
-	go func(ch1 <-chan map[string]int, ch2 <-chan *websocket.Conn) {
+	go func(ch1 <-chan socket.Dummy, ch2 <-chan *websocket.Conn) {
 		for hyperparameters := range ch1 {
 			tr.server.WorkerClients[<-ch2].SendHyperparameters(hyperparameters)
 		}
@@ -111,7 +99,6 @@ func pongHandler(connection *websocket.Conn, message []byte) {
 func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message []byte) {
 	tr.server.WorkerClients[connection].Status = socket.Idle
 	fmt.Printf("Recieved test results from %s: %s\n", fmt.Sprint(connection.RemoteAddr()), string(message))
-	tr.workers <- connection
 
 	if len(tr.combinations) == 0 {
 		close(tr.combinations)
@@ -124,6 +111,8 @@ func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message
 			mc.SendFinished()
 		}
 		fmt.Println("Finished optimizing")
+	} else {
+		tr.workers <- connection
 	}
 }
 

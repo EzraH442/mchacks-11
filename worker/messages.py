@@ -8,5 +8,7 @@ def newReadyToTrainMessage():
     return json.dumps({"ID": "ready-to-train", "msg": ""})
 
 
-def newSendResultsMessage(results):
-    return json.dumps({"ID": "recieve-test-results", "msg": results})
+def newSendResultsMessage(accuracy, chromosomes):
+    return json.dumps(
+        {"ID": "recieve-test-results", "accuracy": accuracy, "chromosomes": chromosomes}
+    )
