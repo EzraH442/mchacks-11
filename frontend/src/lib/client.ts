@@ -24,3 +24,10 @@ export function formatStatus(status: ClientStatus) {
       return 'Disconnected';
   }
 }
+
+export const EmptyHyperparameterData: HyperparameterData = {
+  layers: 0,
+  neuronsPerLayer: [],
+  epsilon: 0,
+  learningRate: 0,
+};

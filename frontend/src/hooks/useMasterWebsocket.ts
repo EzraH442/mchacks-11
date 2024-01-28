@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { Client, ClientStatus } from '../lib/client';
+import { Client, ClientStatus, EmptyHyperparameterData } from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
 import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
@@ -9,13 +9,6 @@ import { HyperparameterData } from '../App';
 interface IUserMasterWebSocket {
   onRecieveResults: (result: any) => void;
 }
-
-const EmptyHyperparameterData: HyperparameterData = {
-  layers: 0,
-  neuronsPerLayer: [],
-  epsilon: 0,
-  learningRate: 0,
-};
 
 const useMasterWebSocket = (params: IUserMasterWebSocket) => {
   const { onRecieveResults } = params;

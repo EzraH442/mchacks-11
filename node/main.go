@@ -73,7 +73,7 @@ func (tr *Trainer) Train(parameters []interface{}) {
 
 			if !ok1 {
 				fmt.Println("No more parameters to test, finished training")
-				// there could still be some workers working through the last batch of parameters
+				// !! there could still be some workers working through the last batch of parameters
 				for _, mc := range tr.server.MasterClients {
 					mc.SendFinished()
 				}

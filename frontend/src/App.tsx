@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import HypForm, { formSchema } from './components/form';
 import { z } from 'zod';
 import { formatNeuronsPerLayer, round } from './lib/utils';
+import HyperparametersView from './components/HyperparamsView';
+import { EmptyHyperparameterData } from './lib/client';
 
 export interface HyperparameterData {
   layers: number;
@@ -18,7 +20,9 @@ function App() {
   const [results, setResults] = useState<Record<string, number>>({});
   const [totalResults, setTotalResutls] = useState(0);
   const [bestResult, setBestResult] = useState<number>(0);
-  const [bestParameters, setBestParameters] = useState<HyperparameterData>();
+  const [bestParameters, setBestParameters] = useState<HyperparameterData>(
+    EmptyHyperparameterData,
+  );
 
   const onRecieveResult = (data: any) => {
     const [loss, accuracy] = data.accuracy;
@@ -115,42 +119,42 @@ function App() {
           Start Training
         </Button>
       </div>
-      <div className="flex">
-        <div style={{ width: 400 }}>
+      <div className="flex space-x-3">
+        <div
+          style={{ width: 400 }}
+          className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
+        >
           <h2 className="text-xl">Connected workers</h2>
 
           <div className="my-4" />
-          <div className="flex space-x-2">
+          <div className="flex space-y-2 px-2 flex-col">
             {clients.map((client) => (
               <ClientCard key={client.id} client={client} />
             ))}
           </div>
         </div>
         <div>
-          <div style={{ width: 400 }}>
+          <div className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200">
             <h2 className=" text-xl">Progress</h2>
 
             <div className="my-4" />
             <div className="flex space-x-2">
               <div className="flex flex-col min-w-60">
-                <span className="font-bold">Hyperparameters Remaining:</span>
+                <span className="font-bold">Hyperparameters Remaining</span>
                 <span>{parametersToTrain.length - totalResults}</span>
               </div>
               <div className="flex flex-col min-w-36">
-                <span className="font-bold">Best Accuracy:</span>
+                <span className="font-bold">Best Accuracy</span>
                 <span>{round(bestResult, 3)}</span>
               </div>
               <div className="flex flex-col min-w-36">
-                <span className="font-bold">Best Parameters:</span>
-                <span>Epsilon: {round(bestParameters?.epsilon ?? 0, 4)}</span>
-                <span>
-                  Learning Rate: {round(bestParameters?.epsilon ?? 0, 4)}
-                </span>
-                <span>Layers: {bestParameters?.layers ?? 0}</span>
-                <span>
-                  NeuronsPerLayer:{' '}
-                  {formatNeuronsPerLayer(bestParameters?.neuronsPerLayer || [])}
-                </span>
+                <span className="font-bold">Hyperparameters</span>
+
+                {totalResults !== 0 ? (
+                  <HyperparametersView hyperparameters={bestParameters} />
+                ) : (
+                  <span>No results yet</span>
+                )}
               </div>
             </div>
             {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
