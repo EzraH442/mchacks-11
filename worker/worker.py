@@ -75,9 +75,10 @@ class Worker:
         self.addr = self.server + ":" + str(self.port)
 
     async def begin_training(self, num_layers, layer_neurons, epsi, learning_rate):
-        accuracy = test_model([num_layers, layer_neurons, epsi, learning_rate])
+        chromosomes = [num_layers, layer_neurons, epsi, learning_rate]
+        accuracy = test_model(chromosomes)
 
-        return accuracy
+        return chromosomes, accuracy
 
     async def wait_and_reply(self):
         async with websockets.connect(self.addr) as websocket:
