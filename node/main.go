@@ -72,8 +72,6 @@ func main() {
 
 	s.AddWorkerHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
 	s.AddWorkerHandler("ready-to-train", Trainer.readyToTrainHandler)
-	s.AddMasterHandler("get-all-workers", func(connection *websocket.Conn, message []byte) {
-
 	s.AddMasterHandler("get-all-clients", func(connection *websocket.Conn, message []byte) {
 		slice := make([]socket.Worker, 0, len(s.WorkerClients))
 		for _, worker := range s.WorkerClients {
