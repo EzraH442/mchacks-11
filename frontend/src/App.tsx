@@ -78,6 +78,13 @@ function App() {
       }
     }
   };
+  const clear = () => {
+    setParametersToTrain([]);
+    setResults({});
+    setTotalResults(0);
+    setBestResult(0);
+    setBestParameters(EmptyHyperparameterData);
+  }
 
   console.log(parametersToTrain);
   console.log(resultsStatus);
@@ -123,6 +130,16 @@ function App() {
             className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
           >
             <HypForm onSubmit={addParameters} disabled={training} />
+            <Button
+          className="mt-4 bg-red-500 text-white hover:bg-red-800"
+          variant="outline"
+          disabled={!parametersToTrain}
+          onClick={() => {
+            clear();
+          }}
+        >
+          Clear
+        </Button>
           </div>
           <div
             className="border bg-gray-50 border-dashed rounded-md py-2 border-gray-200 items-center"
@@ -154,7 +171,7 @@ function App() {
           </div>
         </div>
         <Button
-          className="mt-4"
+          className="mt-4 mb-4"
           variant="outline"
           disabled={training || !connected}
           onClick={() => {
