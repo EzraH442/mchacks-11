@@ -1,20 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useState } from 'react';
 import { Client, ClientStatus } from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
 import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
-
-const generaetRandomName = () => {
-  return uniqueNamesGenerator({
-    dictionaries: [colors, animals],
-  }).replace('_', ' ');
-};
+import NameContext from './useNameContext';
 
 const useMasterWebSocket = () => {
+  const namesContext = useContext(NameContext);
   const [connected, setConnected] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const { toast } = useToast();
 
+  const generaetRandomName = (ip: string) => {
+    if (!namesContext.names[ip]) {
+      namesContext.names[ip] = uniqueNamesGenerator({
+        dictionaries: [colors, animals],
+      }).replace('_', ' ');
+    }
+
+    return namesContext.names[ip];
+  };
   const { sendJsonMessage } = useWebSocket('ws://localhost:8080/master', {
     share: true,
     shouldReconnect: () => true,
@@ -52,7 +57,7 @@ const useMasterWebSocket = () => {
               ip: worker.ip,
               status:
                 worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
-              name: generaetRandomName(),
+              name: generaetRandomName(worker.ip),
             })),
           );
           break;
@@ -66,7 +71,7 @@ const useMasterWebSocket = () => {
               ip: worker.ip,
               status:
                 worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
-              name: generaetRandomName(),
+              name: generaetRandomName(worker.ip),
             },
           ]);
           break;
@@ -98,6 +103,12 @@ const useMasterWebSocket = () => {
                 : client,
             ),
           );
+          break;
+        }
+        case 'genetic-algorithm-status-update': {
+          const status = data.status;
+          console.log('status', status);
+          break;
         }
       }
 
