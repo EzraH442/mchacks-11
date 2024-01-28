@@ -6,6 +6,7 @@ export enum ClientStatus {
 
 export interface Client {
   id: string;
+  name: string;
   ip: string;
   status: ClientStatus;
 }

@@ -4,9 +4,13 @@ import useWebSocket from 'react-use-websocket';
 import { Button } from './components/ui/button';
 import { Client, ClientStatus } from './lib/client';
 import ClientCard from './components/ClientCard';
+import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
+import { Toaster } from './components/ui/toaster';
+import { useToast } from './components/ui/use-toast';
 
 function App() {
   // Create WebSocket connection.
+  const { toast } = useToast();
   const { sendJsonMessage } = useWebSocket('ws://localhost:8080/master', {
     onOpen: (event) => {
       console.log('Connection opened');
@@ -15,6 +19,11 @@ function App() {
       console.log('recieved event: ', event);
       const data = JSON.parse(event.data);
 
+      if (data.message === 'ping') {
+        toast({
+          description: 'Pong!',
+        });
+      }
       if (!data.id) {
         return;
       }
@@ -23,9 +32,12 @@ function App() {
         case 'client-connected': {
           const ip = data.ip;
           const workerId = data.worker_id;
+          const randomName = uniqueNamesGenerator({
+            dictionaries: [colors, animals],
+          }); // big_red_donkey
           setClients((prev) => [
             ...prev,
-            { id: workerId, ip, status: ClientStatus.Idle },
+            { id: workerId, ip, status: ClientStatus.Idle, name: randomName },
           ]);
           break;
         }
@@ -62,14 +74,20 @@ function App() {
   const [clients, setClients] = useState<Client[]>([]);
 
   return (
-    <div className="w-full h-full px-4 bg-slate-700">
-      <h1>DISTRIBUTED HYPERPARAMETER TUNING</h1>
+    <div className="w-full h-full px-4 ">
+      <Toaster />
+      <h1 className="text-2xl underline">DISTRIBUTED HYPERPARAMETER TUNING</h1>
       <div>
-        <h2>Connected workers</h2>
-        {clients.map((client) => (
-          <ClientCard key={client.id} client={client} />
-        ))}
-        <h2>Progress</h2>
+        <h2 className="text-xl">Connected workers</h2>
+
+        <div className="my-4" />
+        <div className="flex space-x-2">
+          {clients.map((client) => (
+            <ClientCard key={client.id} client={client} />
+          ))}
+        </div>
+
+        <h2 className=" text-xl">Progress</h2>
         {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
           <!-- epoch number-->
           <tr>
