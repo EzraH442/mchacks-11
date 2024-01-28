@@ -62,8 +62,8 @@ const useMasterWebSocket = () => {
           break;
         }
         case 'client-connected': {
-          const ip = data.ip;
-          const workerId = data.worker_id;
+          const ip = data.worker.ip;
+          const workerId = data.worker.worker_id;
           setClients((prev) => [
             ...prev,
             {
@@ -82,6 +82,7 @@ const useMasterWebSocket = () => {
         }
         case 'client-started-training': {
           const workerId = data.worker_id;
+          console.log('client-started-training', workerId);
           setClients((prev) =>
             prev.map((client) =>
               client.id === workerId
