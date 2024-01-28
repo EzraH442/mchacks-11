@@ -1,6 +1,40 @@
 import numpy as np
 from keras.datasets import mnist
 import random
+import websockets
+import json
+import asyncio
+import messages
+
+class GeneticServer:
+    def __init__(self):
+        self.server = "ws://localhost:8080"
+        self.accuracy = []
+        self.chromosomes = []
+
+    async def listener(self):
+        async with websockets.connect(self.server) as websocket:
+            print(f"Connected to {self.server}.")
+            await websocket.send(messages.newReadyToWorkMessage())
+            while True:
+                try:
+                    status = await websocket.recv()
+                    data = json.loads(status)
+                    if data["ID"] == "genetic-algorithm-status-update":
+                        for entry in data["accuracy"]:
+                            self.accuracy.append(entry)
+                        for entry in data["chromosomes"]:
+                            self.chromosomes.append(entry)
+                        self._begin_genetic_algorithm()
+                except websockets.ConnectionClosed:
+                    print(f"Connection to {self.server} closed.")
+                    break
+
+    def _begin_genetic_algorithm(self):
+        size = len(self.accuracy)
+        accuracy = [(self.accuracy.pop(), self.chromosomes.pop()) for i in range(0, size)]
+        # to do : further steps of genetic algorithm should go here since this method's call implies that
+        # it's ready to be run
 
 
 def initialize_population(sol_per_pop, num_genes, nb_neurons_possible, low_end_randomized, high_end_randomized):
@@ -19,8 +53,11 @@ def initialize_population(sol_per_pop, num_genes, nb_neurons_possible, low_end_r
     return population
 
 
-def select_parents(population, num_parents_mating):
-    accuracies = [test_model(chromosome) for chromosome in population]
+Gene = GeneticServer()
+Gene.listener()
+
+def select_parents(population, num_parents_mating, accuracies):
+    # accuracies = [test_model(chromosome) for chromosome in population]
 
     # Combine individuals with their corresponding accuracy
     individuals_with_accuracies = list(zip(population, accuracies))
