@@ -35,6 +35,11 @@ type GetAllClientsMessage struct {
 	Workers []Worker `json:"workers"`
 }
 
+type GeneticAlgorithmStatusUpdateMessage struct {
+	ID     string      `json:"id"`
+	Status interface{} `json:"status"`
+}
+
 func (c *MasterClient) SendGetAllClientsMessage(Workers []Worker) {
 	c.Connection.WriteJSON(GetAllClientsMessage{
 		ID:      "get-all-clients",
@@ -68,6 +73,13 @@ func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
 	c.Connection.WriteJSON(ClientConnectionStatusMessage{
 		ID:     "client-disconnected",
 		Worker: Worker{WorkerID: worker.ID, IP: worker.Connection.RemoteAddr().String(), Status: "idle"},
+	})
+}
+
+func (c *MasterClient) SendGeneticAlgorithmStatusUpdateMessage(status interface{}) {
+	c.Connection.WriteJSON(GeneticAlgorithmStatusUpdateMessage{
+		ID:     "genetic-algorithm-status-update",
+		Status: status,
 	})
 }
 
