@@ -49,8 +49,6 @@ func (tr *Trainer) Train(parameters []interface{}) {
 
 	go func() {
 		defer fmt.Println("Sent last batch of parameters")
-		defer close(tr.workers)
-		defer close(tr.combinations)
 
 		for _, p := range parameters {
 			tr.combinations <- p
@@ -64,7 +62,7 @@ func (tr *Trainer) Train(parameters []interface{}) {
 
 			if ok1 && ok2 {
 				fmt.Printf("Sending Parameters: %+v to %s\n", combination, worker.Connection.RemoteAddr())
-				worker.SendHyperparameters(combination)
+				worker.SendHyperparameters(combination, tr.combinations, tr.server)
 
 				for _, mc := range tr.server.MasterClients {
 					mc.SendClientStartedTrainingMessage(worker, combination)
@@ -74,11 +72,11 @@ func (tr *Trainer) Train(parameters []interface{}) {
 			if !ok1 {
 				fmt.Println("No more parameters to test, finished training")
 				// !! there could still be some workers working through the last batch of parameters
+				// Therefore we do not close the channel yet
 				for _, mc := range tr.server.MasterClients {
 					mc.SendFinished()
 				}
 
-				tr.Training = false
 				break
 			}
 		}
@@ -99,10 +97,10 @@ func main() {
 	}
 
 	s := socket.New(pingpong, pingpong)
-	Trainer := NewTrainer(s)
+	trainer := NewTrainer(s)
 
-	s.AddWorkerHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
-	s.AddWorkerHandler("ready-to-train", Trainer.readyToTrainHandler)
+	s.AddWorkerHandler("recieve-test-results", trainer.recieveTestResultsHandler)
+	s.AddWorkerHandler("ready-to-train", trainer.readyToTrainHandler)
 	s.AddMasterHandler("get-all-clients", func(connection *websocket.Conn, message []byte) {
 		slice := make([]socket.Worker, 0, len(s.WorkerClients))
 		for _, worker := range s.WorkerClients {
@@ -118,7 +116,7 @@ func main() {
 	})
 
 	s.AddMasterHandler("start-training", func(connection *websocket.Conn, message []byte) {
-		if !Trainer.Training {
+		if !trainer.Training {
 			StartTrainingMessage := StartTrainingMessage{}
 			err := json.Unmarshal(message, &StartTrainingMessage)
 
@@ -127,10 +125,16 @@ func main() {
 				return
 			}
 
-			Trainer.Train(StartTrainingMessage.Parameters)
+			trainer.Train(StartTrainingMessage.Parameters)
 		} else {
 			fmt.Println("Already training")
 		}
+	})
+	s.AddMasterHandler("finished", func(connection *websocket.Conn, message []byte) {
+		trainer.Training = false
+
+		close(trainer.combinations)
+		close(trainer.workers)
 	})
 
 	// "recieve-test-results": Trainer.recieveTestResultsHandler,

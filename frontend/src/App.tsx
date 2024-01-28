@@ -37,7 +37,11 @@ function App() {
       setBestParameters(hyperparameters);
       setTotalResults(totalResults + 1);
     }
-    console.log(results);
+
+    if (Object.keys(results).length === parametersToTrain.length) {
+      console.log('finished');
+      sendJsonMessage({ ID: 'finished' });
+    }
   };
 
   const {
@@ -170,6 +174,8 @@ function App() {
             </div>
           </div>
         </div>
+        {training &&
+                ( <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWo2cmMzd2R6MmZhbWlrM2Uzc3NnMHB1MmN4M3lxcDAzbjN3MnBpdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GeimqsH0TLDt4tScGw/giphy.gif" alt="bong cat" /> )}
         <Button
           className="mt-4 mb-4"
           variant="outline"
@@ -217,6 +223,9 @@ function App() {
                 ) : (
                   <span>No results yet</span>
                 )}
+
+                
+
               </div>
             </div>
             {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >

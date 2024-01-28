@@ -29,7 +29,7 @@ def create_custom_nn(num_layers, layer_neurons, input_shape, output_shape, epsi)
     model.add(
         Dense(layer_neurons[0], activation="relu", input_shape=(784,))
     )  # Update input_shape to match flattened images
-    for i in range(num_layers - 1):
+    for i in range(int(num_layers) - 1):
         model.add(Dense(layer_neurons[i + 1], activation="relu"))
     model.add(Dense(output_shape, activation="softmax"))
     model.add(BatchNormalization(epsilon=epsi))
