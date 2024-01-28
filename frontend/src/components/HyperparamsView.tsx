@@ -1,4 +1,5 @@
 import { HyperparameterData } from '../App';
+import { round } from '../lib/utils';
 
 interface IHyperparamsViewProps {
   hyperparameters: HyperparameterData;
@@ -18,8 +19,10 @@ const HyperparametersView: React.FC<IHyperparamsViewProps> = ({
       <p className="">
         Neurons per layer: {hyperparameters.neuronsPerLayer.join(', ')}
       </p>
-      <p className="">Epsilon: {hyperparameters.epsilon}</p>
-      <p className="">Learning rate: {hyperparameters.learningRate}</p>
+      <p className="">Epsilon: {round(hyperparameters.epsilon, 3)}</p>
+      <p className="">
+        Learning rate: {round(hyperparameters.learningRate, 3)}
+      </p>
     </div>
   );
 };

@@ -35,10 +35,11 @@ function App() {
     if (data.accuracy[1] > bestResult) {
       setBestResult(accuracy);
       setBestParameters(hyperparameters);
-      setTotalResults(totalResults + 1);
     }
 
-    if (Object.keys(results).length === parametersToTrain.length) {
+    setTotalResults(totalResults + 1);
+
+    if (totalResults === parametersToTrain.length) {
       console.log('finished');
       sendJsonMessage({ ID: 'finished' });
     }
