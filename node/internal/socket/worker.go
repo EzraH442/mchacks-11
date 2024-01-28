@@ -28,13 +28,6 @@ type WorkerClient struct {
 	Status     ClientStatus
 }
 
-type Dummy struct {
-	NumLayers    int     `json:"num_layers"`
-	LayerNeurons []int   `json:"layer_neurons"`
-	Epsilon      float64 `json:"epsi"`
-	LearningRate float64 `json:"learning_rate"`
-}
-
 func NewWorker(connection *websocket.Conn) *WorkerClient {
 	return &WorkerClient{
 		Status:     Idle,
