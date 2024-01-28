@@ -43,8 +43,6 @@ const useMasterWebSocket = () => {
         return;
       }
 
-      console.log(data);
-
       switch (data.id) {
         case 'get-all-clients': {
           const workers = data.workers;
@@ -82,7 +80,6 @@ const useMasterWebSocket = () => {
         }
         case 'client-started-training': {
           const workerId = data.worker_id;
-          console.log('client-started-training', workerId);
           setClients((prev) =>
             prev.map((client) =>
               client.id === workerId

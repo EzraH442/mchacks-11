@@ -58,7 +58,6 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 		for hyperparameters := range ch1 {
 			worker := <-ch2
 
-			fmt.Printf("Sending hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), worker.Connection.RemoteAddr())
 			worker.SendHyperparameters(hyperparameters)
 
 			for _, mc := range tr.server.MasterClients {
