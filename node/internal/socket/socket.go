@@ -18,8 +18,8 @@ type TextMessage struct {
 }
 
 type HyperparametersMessage struct {
-	ID              string `json:"id"`
-	Hyperparameters Dummy  `json:"hyperparameters"`
+	ID              string      `json:"id"`
+	Hyperparameters interface{} `json:"hyperparameters"`
 }
 
 type TestResults struct {

@@ -9,20 +9,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func dummyChannel(ch chan socket.Dummy) {
-	for i := 0; i < 10; i++ {
-		ch <- socket.Dummy{
-			NumLayers:    1,
-			LayerNeurons: []int{i * 10}, // []int{128}
-			Epsilon:      0.5,
-			LearningRate: 0.01,
-		}
-	}
-}
-
 type Trainer struct {
 	Training     bool
-	combinations chan socket.Dummy
+	combinations chan interface{}
 	workers      chan *socket.WorkerClient
 	server       *socket.Server
 }
@@ -36,18 +25,17 @@ type Trainer struct {
 func NewTrainer(server *socket.Server) *Trainer {
 	return &Trainer{
 		server:       server,
-		combinations: make(chan socket.Dummy),
+		combinations: make(chan interface{}),
 		workers:      make(chan *socket.WorkerClient),
 	}
 }
 
-func (tr *Trainer) Train(parameters map[string][]int) {
+func (tr *Trainer) Train(parameters []interface{}) {
+	fmt.Println("Starting testing " + fmt.Sprint(len(parameters)) + " combinations")
 	tr.Training = true
-	fmt.Println("Starting optimizing")
-	// TODO convert the map of hyperparameters into a channel of combinations to test
 
-	tr.combinations = make(chan socket.Dummy, 8192)
-	go dummyChannel(tr.combinations)
+	tr.combinations = make(chan interface{}, 8192)
+	tr.workers = make(chan *socket.WorkerClient, len(tr.server.WorkerClients))
 
 	go func() {
 		for _, c := range tr.server.WorkerClients {
@@ -55,18 +43,25 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 		}
 	}()
 
-	go func(ch1 <-chan socket.Dummy, ch2 <-chan *socket.WorkerClient) {
-		for hyperparameters := range ch1 {
-			worker := <-ch2
-
-			worker.SendHyperparameters(hyperparameters)
-
-			for _, mc := range tr.server.MasterClients {
-				mc.SendClientStartedTrainingMessage(worker)
-			}
+	go func() {
+		for _, p := range parameters {
+			tr.combinations <- p
 		}
-	}(tr.combinations, tr.workers)
+	}()
 
+	go func() {
+		for {
+			worker := <-tr.workers
+			combination := <-tr.combinations
+			fmt.Printf("Sending Parameters: %+v\n to %s\n", combination, worker.Connection.RemoteAddr())
+			worker.SendHyperparameters(combination)
+		}
+	}()
+}
+
+type StartTrainingMessage struct {
+	ID         string        `json:"id"`
+	Parameters []interface{} `json:"parameters"`
 }
 
 func main() {
@@ -97,7 +92,15 @@ func main() {
 
 	s.AddMasterHandler("start-training", func(connection *websocket.Conn, message []byte) {
 		if !Trainer.Training {
-			Trainer.Train(make(map[string][]int))
+			StartTrainingMessage := StartTrainingMessage{}
+			err := json.Unmarshal(message, &StartTrainingMessage)
+
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			Trainer.Train(StartTrainingMessage.Parameters)
 		} else {
 			fmt.Println("Already training")
 		}
