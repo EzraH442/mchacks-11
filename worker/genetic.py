@@ -67,7 +67,7 @@ def initialize_population(sol_per_pop, num_genes, low_end, high_end):
 def calculate_fitness(solution, function_inputs, desired_output):
     elementwise_multiplication = [x * y for x, y in zip(solution, function_inputs)]
     output = sum(elementwise_multiplication)
-    fitness = 1.0 / numpy.abs(output - desired_output)
+    fitness = 1.0 / np.abs(output - desired_output)
     return fitness
 
 
