@@ -52,12 +52,12 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit }) => {
     defaultValues: {
       layers: 1,
       neuronsPerLayer: [128],
-      epsilonMin: 0,
+      epsilonMin: 0.1,
       epsilonMax: 1,
       epsilonStep: 0.1,
-      learningRateMin: 0.001,
-      learningRateMax: 0.01,
-      learningRateStep: 0.001,
+      learningRateMin: 0.02,
+      learningRateMax: 0.1,
+      learningRateStep: 0.02,
     },
   });
 

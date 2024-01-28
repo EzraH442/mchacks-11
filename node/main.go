@@ -53,8 +53,12 @@ func (tr *Trainer) Train(parameters []interface{}) {
 		for {
 			worker := <-tr.workers
 			combination := <-tr.combinations
-			fmt.Printf("Sending Parameters: %+v\n to %s\n", combination, worker.Connection.RemoteAddr())
+			fmt.Printf("Sending Parameters: %+v to %s\n", combination, worker.Connection.RemoteAddr())
 			worker.SendHyperparameters(combination)
+
+			for _, mc := range tr.server.MasterClients {
+				mc.SendClientStartedTrainingMessage(worker, combination)
+			}
 		}
 	}()
 }

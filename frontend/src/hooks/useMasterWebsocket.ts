@@ -4,9 +4,17 @@ import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
 import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
 import NameContext from './useNameContext';
+import { HyperparameterData } from '../App';
 
-const useMasterWebSocket = () => {
+interface IUserMasterWebSocket {
+  onRecieveResults: (result: any) => void;
+}
+
+const useMasterWebSocket = (params: IUserMasterWebSocket) => {
+  const { onRecieveResults } = params;
+
   const namesContext = useContext(NameContext);
+  const [training, setTraining] = useState(false);
   const [connected, setConnected] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const { toast } = useToast();
@@ -94,8 +102,8 @@ const useMasterWebSocket = () => {
         }
         case 'client-finished-training': {
           const workerId = data.worker_id;
-          const results = data.results;
-          console.log('results', results);
+          const result = data.result;
+          console.log('results', result);
           setClients((prev) =>
             prev.map((client) =>
               client.id === workerId
@@ -103,11 +111,16 @@ const useMasterWebSocket = () => {
                 : client,
             ),
           );
+          onRecieveResults(result);
           break;
         }
         case 'genetic-algorithm-status-update': {
           const status = data.status;
           console.log('status', status);
+          break;
+        }
+        case 'finished-training': {
+          setTraining(false);
           break;
         }
       }
@@ -116,9 +129,19 @@ const useMasterWebSocket = () => {
     },
   });
 
+  const startTraining = (parameters: HyperparameterData[]) => {
+    setTraining(true);
+    sendJsonMessage({
+      ID: 'start-training',
+      parameters,
+    });
+  };
+
   return {
+    training,
     clients,
     connected,
+    startTraining,
     sendJsonMessage,
   };
 };

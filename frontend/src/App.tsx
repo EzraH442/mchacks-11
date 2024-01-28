@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import HypForm, { formSchema } from './components/form';
 import { z } from 'zod';
 
-interface HyperparameterData {
+export interface HyperparameterData {
   layers: number;
   neuronsPerLayer: number[];
   epsilon: number;
@@ -25,17 +25,39 @@ function formatNeuronsPerLayer(neuronsPerLayer: number[]) {
   return ret;
 }
 
+function round(num: number, places: number = 2) {
+  return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
+}
+
 function App() {
-  const [training, setTraining] = useState(false);
-  const { clients, connected, sendJsonMessage } = useMasterWebSocket();
+  const [results, setResults] = useState<Record<string, number>>({});
+  const [totalResults, setTotalResutls] = useState(0);
+  const [bestResult, setBestResult] = useState<number>(0);
+  const [bestParameters, setBestParameters] = useState<HyperparameterData>();
+
+  const onRecieveResult = (data: any) => {
+    const [loss, accuracy] = data.accuracy;
+
+    setResults((prev) => ({ ...prev, [data.chromosomes]: accuracy }));
+    if (data.accuracy[1] > bestResult) {
+      setBestResult(accuracy);
+      setBestParameters({
+        layers: data.chromosomes[0],
+        neuronsPerLayer: data.chromosomes[1],
+        epsilon: data.chromosomes[2],
+        learningRate: data.chromosomes[3],
+      });
+      setTotalResutls(totalResults + 1);
+    }
+    console.log(results);
+  };
+
+  const { clients, training, startTraining, connected, sendJsonMessage } =
+    useMasterWebSocket({ onRecieveResults: onRecieveResult });
 
   const [parametersToTrain, setParametersToTrain] = useState<
     HyperparameterData[]
   >([]);
-
-  const [results, setResults] = useState<Record<string, number>>({});
-  const [bestResult, setBestResult] = useState<number>(0);
-  const [bestParameters, setBestParameters] = useState<HyperparameterData>();
 
   const addParameters = (data: z.infer<typeof formSchema>) => {
     for (let i = data.epsilonMin; i <= data.epsilonMax; i += data.epsilonStep) {
@@ -103,11 +125,7 @@ function App() {
           variant="outline"
           disabled={training}
           onClick={() => {
-            setTraining(true);
-            sendJsonMessage({
-              ID: 'start-training',
-              parameters: parametersToTrain,
-            });
+            startTraining(parametersToTrain);
           }}
         >
           Start Training
@@ -132,17 +150,19 @@ function App() {
             <div className="flex space-x-2">
               <div className="flex flex-col min-w-60">
                 <span className="font-bold">Hyperparameters Remaining:</span>
-                <span>{parametersToTrain.length}</span>
+                <span>{parametersToTrain.length - totalResults}</span>
               </div>
               <div className="flex flex-col min-w-36">
                 <span className="font-bold">Best Accuracy:</span>
-                <span>{bestResult}</span>
+                <span>{round(bestResult, 3)}</span>
               </div>
               <div className="flex flex-col min-w-36">
                 <span className="font-bold">Best Parameters:</span>
-                <span>Epsilon: {bestParameters?.epsilon}</span>
-                <span>Learning Rate: {bestParameters?.learningRate}</span>
-                <span>Layers: {bestParameters?.layers}</span>
+                <span>Epsilon: {round(bestParameters?.epsilon ?? 0, 4)}</span>
+                <span>
+                  Learning Rate: {round(bestParameters?.epsilon ?? 0, 4)}
+                </span>
+                <span>Layers: {bestParameters?.layers ?? 0}</span>
                 <span>
                   NeuronsPerLayer:{' '}
                   {formatNeuronsPerLayer(bestParameters?.neuronsPerLayer || [])}
