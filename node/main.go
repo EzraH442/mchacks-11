@@ -72,6 +72,18 @@ func main() {
 
 	s.AddWorkerHandler("recieve-test-results", Trainer.recieveTestResultsHandler)
 	s.AddWorkerHandler("ready-to-train", Trainer.readyToTrainHandler)
+	s.AddMasterHandler("get-all-clients", func(connection *websocket.Conn, message []byte) {
+		slice := make([]socket.Worker, 0, len(s.WorkerClients))
+		for _, worker := range s.WorkerClients {
+			slice = append(slice, socket.Worker{
+				WorkerID: worker.ID,
+				IP:       worker.Connection.RemoteAddr().String(),
+				Status:   fmt.Sprint(worker.Status),
+			})
+		}
+
+		s.MasterClients[connection].SendGetAllClientsMessage(slice)
+	})
 
 	// "recieve-test-results": Trainer.recieveTestResultsHandler,
 	wg.Add(1)

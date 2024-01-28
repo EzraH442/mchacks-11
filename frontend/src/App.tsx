@@ -1,82 +1,36 @@
-import React from 'react';
-import { useState } from 'react';
-import useWebSocket from 'react-use-websocket';
 import { Button } from './components/ui/button';
-import { Client, ClientStatus } from './lib/client';
 import ClientCard from './components/ClientCard';
-import { animals, colors, uniqueNamesGenerator } from 'unique-names-generator';
 import { Toaster } from './components/ui/toaster';
-import { useToast } from './components/ui/use-toast';
+import useMasterWebSocket from './hooks/useMasterWebsocket';
 
 function App() {
-  // Create WebSocket connection.
-  const { toast } = useToast();
-  const { sendJsonMessage } = useWebSocket('ws://localhost:8080/master', {
-    onOpen: (event) => {
-      console.log('Connection opened');
-    },
-    onMessage: (event) => {
-      console.log('recieved event: ', event);
-      const data = JSON.parse(event.data);
-
-      if (data.message === 'ping') {
-        toast({
-          description: 'Pong!',
-        });
-      }
-      if (!data.id) {
-        return;
-      }
-
-      switch (data.id) {
-        case 'client-connected': {
-          const ip = data.ip;
-          const workerId = data.worker_id;
-          const randomName = uniqueNamesGenerator({
-            dictionaries: [colors, animals],
-          }); // big_red_donkey
-          setClients((prev) => [
-            ...prev,
-            { id: workerId, ip, status: ClientStatus.Idle, name: randomName },
-          ]);
-          break;
-        }
-        case 'client-disconnected': {
-          const workerId = data.worker_id;
-          setClients((prev) => prev.filter((client) => client.id !== workerId));
-          break;
-        }
-        case 'client-started-training': {
-          const workerId = data.worker_id;
-          setClients((prev) =>
-            prev.map((client) =>
-              client.id === workerId
-                ? { ...client, status: ClientStatus.Working }
-                : client,
-            ),
-          );
-          break;
-        }
-        case 'client-finished-training': {
-          const workerId = data.worker_id;
-          setClients((prev) =>
-            prev.map((client) =>
-              client.id === workerId
-                ? { ...client, status: ClientStatus.Idle }
-                : client,
-            ),
-          );
-        }
-      }
-    },
-  });
-
-  const [clients, setClients] = useState<Client[]>([]);
+  const { clients, connected, sendJsonMessage } = useMasterWebSocket();
 
   return (
     <div className="w-full h-full px-4 ">
       <Toaster />
       <h1 className="text-2xl underline">DISTRIBUTED HYPERPARAMETER TUNING</h1>
+      <div>
+        <div className="flex space-x-2">
+          <div className="flex flex-col">
+            <span className="font-bold">Connection status:</span>
+
+            <span
+              className={`${
+                connected
+                  ? 'text-green-900 bg-green-300'
+                  : 'bg-red-500 text-white'
+              } px-2 py-1 rounded-lg text-center w-36`}
+            >
+              {connected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold">Connected clients:</span>
+            <span>{clients.length}</span>
+          </div>
+        </div>
+      </div>
       <div>
         <h2 className="text-xl">Connected workers</h2>
 

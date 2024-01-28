@@ -8,11 +8,15 @@ type MasterClient struct {
 	Connection *websocket.Conn
 }
 
-type ClientConnectionStatusMessage struct {
-	ID       string `json:"id"`
+type Worker struct {
 	WorkerID string `json:"worker_id"`
 	IP       string `json:"ip"`
 	Status   string `json:"status"`
+}
+
+type ClientConnectionStatusMessage struct {
+	ID     string `json:"id"`
+	Worker Worker `json:"worker"`
 }
 
 type ClientTrainingStatusMessage struct {
@@ -20,12 +24,22 @@ type ClientTrainingStatusMessage struct {
 	WorkerID string `json:"worker_id"`
 }
 
+type GetAllClientsMessage struct {
+	ID      string   `json:"id"`
+	Workers []Worker `json:"workers"`
+}
+
+func (c *MasterClient) SendGetAllClientsMessage(Workers []Worker) {
+	c.Connection.WriteJSON(GetAllClientsMessage{
+		ID:      "get-all-clients",
+		Workers: Workers,
+	})
+}
+
 func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
 	c.Connection.WriteJSON(ClientConnectionStatusMessage{
-		ID:       "client-connected",
-		WorkerID: worker.ID,
-		IP:       worker.Connection.RemoteAddr().String(),
-		Status:   "idle",
+		ID:     "client-connected",
+		Worker: Worker{WorkerID: worker.ID, IP: worker.Connection.RemoteAddr().String(), Status: "idle"},
 	})
 }
 
@@ -45,10 +59,8 @@ func (c *MasterClient) SendClientFinishedTrainingMessage(worker *WorkerClient) {
 
 func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
 	c.Connection.WriteJSON(ClientConnectionStatusMessage{
-		ID:       "client-disconnected",
-		WorkerID: worker.ID,
-		IP:       worker.Connection.RemoteAddr().String(),
-		Status:   "idle",
+		ID:     "client-disconnected",
+		Worker: Worker{WorkerID: worker.ID, IP: worker.Connection.RemoteAddr().String(), Status: "idle"},
 	})
 }
 
