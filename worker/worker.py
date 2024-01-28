@@ -1,7 +1,10 @@
 import websockets
-from websockets.sync.client import connect
 import json
 import asyncio
+
+
+def job_fail(err):
+    return json.dumps({"msg": err, "id": "1"})
 
 
 class Worker:
@@ -10,38 +13,22 @@ class Worker:
         self.server = server
         self.port = port
         self.addr = self.server + ":" + str(self.port)
-        self.ws = connect(self.addr)
 
-    def _job_fail(self, err):
-        return json.dumps({"msg": err, "id": "1"})
+    async def wait_and_reply(self):
+        async with websockets.connect(self.addr) as websocket:
+            await websocket.send(json.dumps({"id": "ready-to-train"}))
+            while True:
+                try:
+                    status = await websocket.recv()
+                    # if json.loads(status)["id"] == "start-hyperparameters":
 
-    def send_result(self, message):
-        with connect(self.server + ":" + str(self.port)) as websocket:
-            websocket.send(message)
-            ret = websocket.recv()
-            print(f"Send {ret} to master")
-
-    def send_ready(self):
-        self.ws.send(json.dumps({"id": "ready-to-train"}))
-        print("Sent to server")
-
-    async def wait_reply(self):
-        while True:
-            try:
-                status = await self.ws.recv()
-            except websockets.ConnectionClosed:
-                print(f"Connection to {self.addr} closed.")
-                break
-
-            # pass data to genetic_algo
-
-            await self.ws.send(json.dumps({"msg": status, "id": "2"}))
-            print("success")
+                except websockets.ConnectionClosed:
+                    print(f"Connection to{self.addr} closed.")
+                    break
+                except Exception as e:
+                    await websocket.send(job_fail(e))
+                    break
 
 
 NewSocket = Worker("ws://localhost")
-NewSocket.send_ready()
-asyncio.run(NewSocket.wait_reply())
-
-
-
+asyncio.run(NewSocket.wait_and_reply())
