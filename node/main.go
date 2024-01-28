@@ -48,7 +48,12 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 
 	go func(ch1 <-chan socket.Dummy, ch2 <-chan *websocket.Conn) {
 		for hyperparameters := range ch1 {
-			tr.server.WorkerClients[<-ch2].SendHyperparameters(hyperparameters)
+			worker := tr.server.WorkerClients[<-ch2]
+			worker.SendHyperparameters(hyperparameters)
+
+			for _, mc := range tr.server.MasterClients {
+				mc.SendClientStartedTrainingMessage(worker)
+			}
 		}
 	}(tr.combinations, tr.workers)
 
@@ -97,8 +102,14 @@ func pongHandler(connection *websocket.Conn, message []byte) {
 }
 
 func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message []byte) {
-	tr.server.WorkerClients[connection].Status = socket.Idle
 	fmt.Printf("Recieved test results from %s: %s\n", fmt.Sprint(connection.RemoteAddr()), string(message))
+
+	worker := tr.server.WorkerClients[connection]
+	worker.Status = socket.Idle
+
+	for _, mc := range tr.server.MasterClients {
+		mc.SendClientStartedTrainingMessage(worker)
+	}
 
 	if len(tr.combinations) == 0 {
 		close(tr.combinations)

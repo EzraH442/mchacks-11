@@ -50,7 +50,7 @@ function App() {
           const workerId = data.worker_id;
           setClients((prev) =>
             prev.map((client) =>
-              client.id === data.client.id
+              client.id === workerId
                 ? { ...client, status: ClientStatus.Working }
                 : client,
             ),
@@ -61,7 +61,7 @@ function App() {
           const workerId = data.worker_id;
           setClients((prev) =>
             prev.map((client) =>
-              client.id === data.client.id
+              client.id === workerId
                 ? { ...client, status: ClientStatus.Idle }
                 : client,
             ),
