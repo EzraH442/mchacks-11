@@ -51,23 +51,21 @@ const useMasterWebSocket = () => {
               id: worker.worker_id,
               ip: worker.ip,
               status:
-                worker.status === 'idle'
-                  ? ClientStatus.Idle
-                  : ClientStatus.Working,
+                worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
               name: generaetRandomName(),
             })),
           );
           break;
         }
         case 'client-connected': {
-          const ip = data.worker.ip;
-          const workerId = data.worker.worker_id;
+          const worker = data.worker;
           setClients((prev) => [
             ...prev,
             {
-              id: workerId,
-              ip,
-              status: ClientStatus.Idle,
+              id: worker.worker_id,
+              ip: worker.ip,
+              status:
+                worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
               name: generaetRandomName(),
             },
           ]);
@@ -91,6 +89,8 @@ const useMasterWebSocket = () => {
         }
         case 'client-finished-training': {
           const workerId = data.worker_id;
+          const results = data.results;
+          console.log('results', results);
           setClients((prev) =>
             prev.map((client) =>
               client.id === workerId

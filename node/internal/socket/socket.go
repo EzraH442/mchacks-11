@@ -22,6 +22,12 @@ type HyperparametersMessage struct {
 	Hyperparameters Dummy  `json:"hyperparameters"`
 }
 
+type TestResults struct {
+	ID          string        `json:"ID"`
+	Accuracy    []float64     `json:"accuracy"`
+	Chromosomes []interface{} `json:"chromosomes"`
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,

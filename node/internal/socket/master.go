@@ -19,9 +19,15 @@ type ClientConnectionStatusMessage struct {
 	Worker Worker `json:"worker"`
 }
 
-type ClientTrainingStatusMessage struct {
+type ClientStartedTrainingMessage struct {
 	ID       string `json:"id"`
 	WorkerID string `json:"worker_id"`
+}
+
+type ClientFinishedTrainingMessage struct {
+	ID       string      `json:"id"`
+	WorkerID string      `json:"worker_id"`
+	Result   TestResults `json:"result"`
 }
 
 type GetAllClientsMessage struct {
@@ -44,16 +50,17 @@ func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
 }
 
 func (c *MasterClient) SendClientStartedTrainingMessage(worker *WorkerClient) {
-	c.Connection.WriteJSON(ClientTrainingStatusMessage{
+	c.Connection.WriteJSON(ClientStartedTrainingMessage{
 		ID:       "client-started-training",
 		WorkerID: worker.ID,
 	})
 }
 
-func (c *MasterClient) SendClientFinishedTrainingMessage(worker *WorkerClient) {
-	c.Connection.WriteJSON(ClientTrainingStatusMessage{
+func (c *MasterClient) SendClientFinishedTrainingMessage(worker *WorkerClient, result TestResults) {
+	c.Connection.WriteJSON(ClientFinishedTrainingMessage{
 		ID:       "client-finished-training",
 		WorkerID: worker.ID,
+		Result:   result,
 	})
 }
 

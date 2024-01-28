@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"socket"
 	"sync"
@@ -131,9 +132,14 @@ func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message
 
 	worker := tr.server.WorkerClients[connection]
 	worker.Status = socket.Idle
+	testResults := socket.TestResults{}
+	err := json.Unmarshal(message, &testResults)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	for _, mc := range tr.server.MasterClients {
-		mc.SendClientFinishedTrainingMessage(worker)
+		mc.SendClientFinishedTrainingMessage(worker, testResults)
 	}
 
 	// if len(tr.combinations) == 0 {
