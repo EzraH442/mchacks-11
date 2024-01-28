@@ -1,7 +1,6 @@
 import websockets
 import json
 import asyncio
-import genetic
 import messages
 import numpy as np
 
@@ -75,12 +74,8 @@ class Worker:
         self.port = port
         self.addr = self.server + ":" + str(self.port)
 
-    async def begin_training(
-        self, num_layers, layer_neurons, input_shape, output_shape, epsi
-    ):
-        accuracy = test_model(
-            [num_layers, layer_neurons, input_shape, output_shape, epsi]
-        )
+    async def begin_training(self, num_layers, layer_neurons, epsi, learning_rate):
+        accuracy = test_model([num_layers, layer_neurons, epsi, learning_rate])
 
         return accuracy
 
@@ -91,10 +86,19 @@ class Worker:
             while True:
                 try:
                     status = await websocket.recv()
-                    print(json.loads(status)["id"])
+                    data = json.loads(status)
+                    print(data)
 
-                    if json.loads(status)["id"] == "start-hyperparameters":
-                        best, output = await self.begin_training()
+                    if data["id"] == "start-hyperparameters":
+                        hyperparameters = data["hyperparameters"]
+                        num_layers = hyperparameters["num_layers"]
+                        layer_neurons = hyperparameters["layer_neurons"]
+                        epsilon = hyperparameters["epsi"]
+                        learning_rate = hyperparameters["learning_rate"]
+
+                        output = await self.begin_training(
+                            num_layers, layer_neurons, epsilon, learning_rate
+                        )
                         await websocket.send(messages.newSendResultsMessage(output))
                     # genetic.genetic_algorithm()
 
