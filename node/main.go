@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"socket"
 	"sync"
@@ -12,7 +13,7 @@ func dummyChannel(ch chan socket.Dummy) {
 	for i := 0; i < 10; i++ {
 		ch <- socket.Dummy{
 			NumLayers:    1,
-			LayerNeurons: []int{128},
+			LayerNeurons: []int{i * 10}, // []int{128}
 			Epsilon:      0.5,
 			LearningRate: 0.01,
 		}
@@ -20,8 +21,9 @@ func dummyChannel(ch chan socket.Dummy) {
 }
 
 type Trainer struct {
+	Training     bool
 	combinations chan socket.Dummy
-	workers      chan *websocket.Conn
+	workers      chan *socket.WorkerClient
 	server       *socket.Server
 }
 
@@ -35,20 +37,28 @@ func NewTrainer(server *socket.Server) *Trainer {
 	return &Trainer{
 		server:       server,
 		combinations: make(chan socket.Dummy),
-		workers:      make(chan *websocket.Conn),
+		workers:      make(chan *socket.WorkerClient),
 	}
 }
 
 func (tr *Trainer) Train(parameters map[string][]int) {
+	tr.Training = true
 	fmt.Println("Starting optimizing")
 	// TODO convert the map of hyperparameters into a channel of combinations to test
 
 	tr.combinations = make(chan socket.Dummy, 8192)
 	go dummyChannel(tr.combinations)
 
-	go func(ch1 <-chan socket.Dummy, ch2 <-chan *websocket.Conn) {
+	go func() {
+		for _, c := range tr.server.WorkerClients {
+			tr.workers <- c
+		}
+	}()
+
+	go func(ch1 <-chan socket.Dummy, ch2 <-chan *socket.WorkerClient) {
 		for hyperparameters := range ch1 {
-			worker := tr.server.WorkerClients[<-ch2]
+			worker := <-ch2
+
 			worker.SendHyperparameters(hyperparameters)
 
 			for _, mc := range tr.server.MasterClients {
@@ -85,6 +95,14 @@ func main() {
 		s.MasterClients[connection].SendGetAllClientsMessage(slice)
 	})
 
+	s.AddMasterHandler("start-training", func(connection *websocket.Conn, message []byte) {
+		if !Trainer.Training {
+			Trainer.Train(make(map[string][]int))
+		} else {
+			fmt.Println("Already training")
+		}
+	})
+
 	// "recieve-test-results": Trainer.recieveTestResultsHandler,
 	wg.Add(1)
 
@@ -94,10 +112,6 @@ func main() {
 	}()
 	fmt.Println("Server started on port 8080")
 
-	wg.Add(1)
-	go func() {
-		Trainer.Train(make(map[string][]int))
-	}()
 	wg.Wait()
 }
 
@@ -118,27 +132,37 @@ func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message
 
 	worker := tr.server.WorkerClients[connection]
 	worker.Status = socket.Idle
+	testResults := socket.TestResults{}
+	err := json.Unmarshal(message, &testResults)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	for _, mc := range tr.server.MasterClients {
-		mc.SendClientStartedTrainingMessage(worker)
+		mc.SendClientFinishedTrainingMessage(worker, testResults)
 	}
 
-	if len(tr.combinations) == 0 {
-		close(tr.combinations)
-		close(tr.workers)
+	// if len(tr.combinations) == 0 {
+	// 	close(tr.combinations)
+	// 	close(tr.workers)
 
-		for _, wc := range tr.server.WorkerClients {
-			wc.SendFinished()
-		}
-		for _, mc := range tr.server.MasterClients {
-			mc.SendFinished()
-		}
-		fmt.Println("Finished optimizing")
-	} else {
-		tr.workers <- connection
+	// 	for _, wc := range tr.server.WorkerClients {
+	// 		wc.SendFinished()
+	// 	}
+	// 	for _, mc := range tr.server.MasterClients {
+	// 		mc.SendFinished()
+	// 	}
+	// 	fmt.Println("Finished optimizing")
+	// } else {
+
+	if tr.Training {
+		tr.workers <- worker
 	}
+	//}
 }
 
 func (tr *Trainer) readyToTrainHandler(connection *websocket.Conn, message []byte) {
-	tr.workers <- connection
+	if tr.Training {
+		tr.workers <- tr.server.WorkerClients[connection]
+	}
 }
