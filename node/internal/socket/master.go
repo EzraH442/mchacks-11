@@ -8,22 +8,50 @@ type MasterClient struct {
 	Connection *websocket.Conn
 }
 
-func (c *MasterClient) SendClientConnectedMessage(workerID string) {
-	c.Connection.WriteJSON(TextMessage{ID: "client-connected", Message: workerID})
+type ClientConnectionStatusMessage struct {
+	ID       string `json:"id"`
+	WorkerID string `json:"worker_id"`
+	IP       string `json:"ip"`
+	Status   string `json:"status"`
 }
 
-func (c *MasterClient) SendClientStartedTrainingMessage(message string) {
-	c.Connection.WriteJSON(TextMessage{ID: "client-started-training", Message: message})
+type ClientTrainingStatusMessage struct {
+	ID       string `json:"id"`
+	WorkerID string `json:"worker_id"`
 }
 
-func (c *MasterClient) SendClientFinishedTrainingMessage(message string) {
-	c.Connection.WriteJSON(TextMessage{ID: "client-finished-training", Message: message})
+func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
+	c.Connection.WriteJSON(ClientConnectionStatusMessage{
+		ID:       "client-connected",
+		WorkerID: worker.ID,
+		IP:       worker.Connection.RemoteAddr().String(),
+		Status:   "idle",
+	})
 }
 
-func (c *MasterClient) SendClientDisconnectedMessage(workerID string) {
-	c.Connection.WriteJSON(TextMessage{ID: "client-disconnected", Message: workerID})
+func (c *MasterClient) SendClientStartedTrainingMessage(worker *WorkerClient) {
+	c.Connection.WriteJSON(ClientTrainingStatusMessage{
+		ID:       "client-started-training",
+		WorkerID: worker.ID,
+	})
+}
+
+func (c *MasterClient) SendClientFinishedTrainingMessage(worker *WorkerClient) {
+	c.Connection.WriteJSON(ClientTrainingStatusMessage{
+		ID:       "client-finished-training",
+		WorkerID: worker.ID,
+	})
+}
+
+func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
+	c.Connection.WriteJSON(ClientConnectionStatusMessage{
+		ID:       "client-disconnected",
+		WorkerID: worker.ID,
+		IP:       worker.Connection.RemoteAddr().String(),
+		Status:   "idle",
+	})
 }
 
 func (c *MasterClient) SendFinished() {
-	c.Connection.WriteJSON(TextMessage{ID: "client-disconnected", Message: ""})
+	// c.Connection.WriteJSON(TextMessage{ID: "client-disconnected", Message: ""})
 }
