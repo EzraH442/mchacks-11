@@ -82,6 +82,13 @@ function App() {
       }
     }
   };
+  const clear = () => {
+    setParametersToTrain([]);
+    setResults({});
+    setTotalResults(0);
+    setBestResult(0);
+    setBestParameters(EmptyHyperparameterData);
+  }
 
   console.log(parametersToTrain);
   console.log(resultsStatus);
@@ -127,6 +134,16 @@ function App() {
             className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
           >
             <HypForm onSubmit={addParameters} disabled={training} />
+            <Button
+          className="mt-4 bg-red-500 text-white hover:bg-red-800"
+          variant="outline"
+          disabled={training}
+          onClick={() => {
+            clear();
+          }}
+        >
+          Clear
+        </Button>
           </div>
           <div
             className="border bg-gray-50 border-dashed rounded-md py-2 border-gray-200 items-center"
@@ -157,8 +174,10 @@ function App() {
             </div>
           </div>
         </div>
+        {training &&
+                ( <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWo2cmMzd2R6MmZhbWlrM2Uzc3NnMHB1MmN4M3lxcDAzbjN3MnBpdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GeimqsH0TLDt4tScGw/giphy.gif" alt="bong cat" /> )}
         <Button
-          className="mt-4"
+          className="mt-4 mb-4"
           variant="outline"
           disabled={training || !connected}
           onClick={() => {
@@ -204,6 +223,9 @@ function App() {
                 ) : (
                   <span>No results yet</span>
                 )}
+
+                
+
               </div>
             </div>
             {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
