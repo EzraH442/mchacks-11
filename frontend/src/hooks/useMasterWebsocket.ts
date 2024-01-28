@@ -36,19 +36,26 @@ const useMasterWebSocket = () => {
         toast({
           description: 'Pong!',
         });
+        return;
       }
+
       if (!data.id) {
         return;
       }
 
+      console.log(data);
+
       switch (data.id) {
         case 'get-all-clients': {
-          const clients = data.workers;
+          const workers = data.workers;
           setClients(
-            clients.map((client: any) => ({
-              id: client.worker_id,
-              ip: client.ip,
-              status: ClientStatus.Idle,
+            workers.map((worker: any) => ({
+              id: worker.worker_id,
+              ip: worker.ip,
+              status:
+                worker.status === 'idle'
+                  ? ClientStatus.Idle
+                  : ClientStatus.Working,
               name: generaetRandomName(),
             })),
           );
@@ -69,7 +76,7 @@ const useMasterWebSocket = () => {
           break;
         }
         case 'client-disconnected': {
-          const workerId = data.worker_id;
+          const workerId = data.worker.worker_id;
           setClients((prev) => prev.filter((client) => client.id !== workerId));
           break;
         }

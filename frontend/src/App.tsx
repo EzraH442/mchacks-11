@@ -2,8 +2,10 @@ import { Button } from './components/ui/button';
 import ClientCard from './components/ClientCard';
 import { Toaster } from './components/ui/toaster';
 import useMasterWebSocket from './hooks/useMasterWebsocket';
+import { useEffect, useState } from 'react';
 
 function App() {
+  const [training, setTraining] = useState(false);
   const { clients, connected, sendJsonMessage } = useMasterWebSocket();
 
   return (
@@ -11,7 +13,7 @@ function App() {
       <Toaster />
       <h1 className="text-2xl underline">DISTRIBUTED HYPERPARAMETER TUNING</h1>
       <div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-4">
           <div className="flex flex-col">
             <span className="font-bold">Connection status:</span>
 
@@ -30,6 +32,17 @@ function App() {
             <span>{clients.length}</span>
           </div>
         </div>
+        <Button
+          className="mt-4"
+          variant="outline"
+          disabled={training}
+          onClick={() => {
+            setTraining(true);
+            sendJsonMessage({ ID: 'start-training' });
+          }}
+        >
+          Start Training
+        </Button>
       </div>
       <div>
         <h2 className="text-xl">Connected workers</h2>
