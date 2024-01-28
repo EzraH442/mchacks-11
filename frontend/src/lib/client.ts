@@ -1,3 +1,5 @@
+import { HyperparameterData } from '../App';
+
 export enum ClientStatus {
   Idle,
   Working,
@@ -9,6 +11,7 @@ export interface Client {
   name: string;
   ip: string;
   status: ClientStatus;
+  currentTask: HyperparameterData;
 }
 
 export function formatStatus(status: ClientStatus) {

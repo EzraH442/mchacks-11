@@ -5,28 +5,13 @@ import useMasterWebSocket from './hooks/useMasterWebsocket';
 import { useEffect, useState } from 'react';
 import HypForm, { formSchema } from './components/form';
 import { z } from 'zod';
+import { formatNeuronsPerLayer, round } from './lib/utils';
 
 export interface HyperparameterData {
   layers: number;
   neuronsPerLayer: number[];
   epsilon: number;
   learningRate: number;
-}
-
-function formatNeuronsPerLayer(neuronsPerLayer: number[]) {
-  let ret = '';
-  neuronsPerLayer.forEach((neurons, index) => {
-    ret += neurons;
-    if (index < neuronsPerLayer.length - 1) {
-      ret += ',';
-    }
-  });
-
-  return ret;
-}
-
-function round(num: number, places: number = 2) {
-  return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
 }
 
 function App() {
@@ -37,16 +22,15 @@ function App() {
 
   const onRecieveResult = (data: any) => {
     const [loss, accuracy] = data.accuracy;
+    const hyperparameters = data.hyperparameters;
 
-    setResults((prev) => ({ ...prev, [data.chromosomes]: accuracy }));
+    setResults((prev) => ({
+      ...prev,
+      [JSON.stringify(hyperparameters)]: accuracy,
+    }));
     if (data.accuracy[1] > bestResult) {
       setBestResult(accuracy);
-      setBestParameters({
-        layers: data.chromosomes[0],
-        neuronsPerLayer: data.chromosomes[1],
-        epsilon: data.chromosomes[2],
-        learningRate: data.chromosomes[3],
-      });
+      setBestParameters(hyperparameters);
       setTotalResutls(totalResults + 1);
     }
     console.log(results);
@@ -117,13 +101,13 @@ function App() {
         <h2 className="font-bold">Hyperparameter settings:</h2>
         <div>
           <div style={{ width: 500 }}>
-            <HypForm onSubmit={addParameters} />
+            <HypForm onSubmit={addParameters} disabled={training} />
           </div>
         </div>
         <Button
           className="mt-4"
           variant="outline"
-          disabled={training}
+          disabled={training || !connected}
           onClick={() => {
             startTraining(parametersToTrain);
           }}

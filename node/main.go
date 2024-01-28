@@ -14,6 +14,10 @@ type Trainer struct {
 	combinations chan interface{}
 	workers      chan *socket.WorkerClient
 	server       *socket.Server
+
+	topCombination        interface{}
+	topAccuraacy          float64
+	remainingCombinations int
 }
 
 //	hyperparameters := map[string][]int{
@@ -34,7 +38,7 @@ func (tr *Trainer) Train(parameters []interface{}) {
 	fmt.Println("Starting testing " + fmt.Sprint(len(parameters)) + " combinations")
 	tr.Training = true
 
-	tr.combinations = make(chan interface{}, 8192)
+	tr.combinations = make(chan interface{})
 	tr.workers = make(chan *socket.WorkerClient, len(tr.server.WorkerClients))
 
 	go func() {
@@ -44,6 +48,10 @@ func (tr *Trainer) Train(parameters []interface{}) {
 	}()
 
 	go func() {
+		defer fmt.Println("Sent last batch of parameters")
+		defer close(tr.workers)
+		defer close(tr.combinations)
+
 		for _, p := range parameters {
 			tr.combinations <- p
 		}
@@ -51,13 +59,27 @@ func (tr *Trainer) Train(parameters []interface{}) {
 
 	go func() {
 		for {
-			worker := <-tr.workers
-			combination := <-tr.combinations
-			fmt.Printf("Sending Parameters: %+v to %s\n", combination, worker.Connection.RemoteAddr())
-			worker.SendHyperparameters(combination)
+			worker, ok1 := <-tr.workers
+			combination, ok2 := <-tr.combinations
 
-			for _, mc := range tr.server.MasterClients {
-				mc.SendClientStartedTrainingMessage(worker, combination)
+			if ok1 && ok2 {
+				fmt.Printf("Sending Parameters: %+v to %s\n", combination, worker.Connection.RemoteAddr())
+				worker.SendHyperparameters(combination)
+
+				for _, mc := range tr.server.MasterClients {
+					mc.SendClientStartedTrainingMessage(worker, combination)
+				}
+			}
+
+			if !ok1 {
+				fmt.Println("No more parameters to test, finished training")
+				// there could still be some workers working through the last batch of parameters
+				for _, mc := range tr.server.MasterClients {
+					mc.SendFinished()
+				}
+
+				tr.Training = false
+				break
 			}
 		}
 	}()
@@ -143,6 +165,11 @@ func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message
 	err := json.Unmarshal(message, &testResults)
 	if err != nil {
 		fmt.Println(err)
+	}
+
+	if testResults.Accuracy[1] > tr.topAccuraacy {
+		tr.topAccuraacy = testResults.Accuracy[1]
+		tr.topCombination = testResults.Hyperparameters
 	}
 
 	for _, mc := range tr.server.MasterClients {

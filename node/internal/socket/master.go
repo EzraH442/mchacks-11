@@ -86,5 +86,5 @@ func (c *MasterClient) SendGeneticAlgorithmStatusUpdateMessage(status interface{
 }
 
 func (c *MasterClient) SendFinished() {
-	// c.Connection.WriteJSON(TextMessage{ID: "client-disconnected", Message: ""})
+	c.Connection.WriteJSON(TextMessage{ID: "training-finished", Message: ""})
 }

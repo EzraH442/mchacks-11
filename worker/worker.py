@@ -39,7 +39,7 @@ def create_custom_nn(num_layers, layer_neurons, input_shape, output_shape, epsi)
 
 def test_model(chromosome):
     model = create_custom_nn(chromosome[0], chromosome[1], 784, 10, chromosome[2])
-    custom_optimizer = Adam(learning_rate=(chromosome[3]/50))
+    custom_optimizer = Adam(learning_rate=(chromosome[3] / 50))
 
     # Compile the model with the custom optimizer
     model.compile(
@@ -101,7 +101,7 @@ class Worker:
                             num_layers, layer_neurons, epsilon, learning_rate
                         )
                         await websocket.send(
-                            messages.newSendResultsMessage(accuracy, chromomes)
+                            messages.newSendResultsMessage(accuracy, hyperparameters)
                         )
                     # genetic.genetic_algorithm()
 

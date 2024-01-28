@@ -13,7 +13,7 @@ def newReadyToWorkMessage():
     # the master server
     return json.dumps({"ID": "ready-genetic-algorithm", "msg": ""})
 
-def newSendResultsMessage(accuracy, chromosomes):
+def newSendResultsMessage(accuracy, hyperparameters):
     return json.dumps(
-        {"ID": "recieve-test-results", "accuracy": accuracy, "chromosomes": chromosomes}
+        {"ID": "recieve-test-results", "accuracy": accuracy, "hyperparameters": hyperparameters}
     )

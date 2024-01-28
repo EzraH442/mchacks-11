@@ -23,9 +23,9 @@ type HyperparametersMessage struct {
 }
 
 type TestResults struct {
-	ID          string        `json:"ID"`
-	Accuracy    []float64     `json:"accuracy"`
-	Chromosomes []interface{} `json:"chromosomes"`
+	ID              string      `json:"ID"`
+	Accuracy        []float64   `json:"accuracy"`
+	Hyperparameters interface{} `json:"hyperparameters"`
 }
 
 var upgrader = websocket.Upgrader{

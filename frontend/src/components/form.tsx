@@ -45,9 +45,10 @@ export const formSchema = z.object({
 
 interface HypFormProps {
   onSubmit: (data: z.infer<typeof formSchema>) => void;
+  disabled?: boolean;
 }
 
-const HypForm: React.FC<HypFormProps> = ({ onSubmit }) => {
+const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     defaultValues: {
       layers: 1,
@@ -177,7 +178,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit }) => {
           )}
         />
         <div className="my-4" />
-        <Button onClick={form.handleSubmit(onSubmit)}>Add Parameters</Button>
+
+        <Button disabled={disabled} onClick={form.handleSubmit(onSubmit)}>
+          Add Parameters
+        </Button>
       </Form>
     </div>
   );

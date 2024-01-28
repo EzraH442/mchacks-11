@@ -10,6 +10,13 @@ interface IUserMasterWebSocket {
   onRecieveResults: (result: any) => void;
 }
 
+const EmptyHyperparameterData: HyperparameterData = {
+  layers: 0,
+  neuronsPerLayer: [],
+  epsilon: 0,
+  learningRate: 0,
+};
+
 const useMasterWebSocket = (params: IUserMasterWebSocket) => {
   const { onRecieveResults } = params;
 
@@ -78,7 +85,10 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
               id: worker.worker_id,
               ip: worker.ip,
               status:
-                worker.status == 0 ? ClientStatus.Idle : ClientStatus.Working,
+                worker.status === 'idle'
+                  ? ClientStatus.Idle
+                  : ClientStatus.Working,
+              currentTask: EmptyHyperparameterData,
               name: generaetRandomName(worker.ip),
             },
           ]);
@@ -91,10 +101,15 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
         }
         case 'client-started-training': {
           const workerId = data.worker_id;
+          const hyperparameters = data.parameters;
           setClients((prev) =>
             prev.map((client) =>
               client.id === workerId
-                ? { ...client, status: ClientStatus.Working }
+                ? {
+                    ...client,
+                    status: ClientStatus.Working,
+                    currentTask: hyperparameters,
+                  }
                 : client,
             ),
           );
@@ -119,7 +134,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
           console.log('status', status);
           break;
         }
-        case 'finished-training': {
+        case 'training-finished': {
           setTraining(false);
           break;
         }
