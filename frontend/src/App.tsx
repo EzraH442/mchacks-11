@@ -130,7 +130,7 @@ function App() {
           </div>
 
           <div className="my-4" />
-          <div className="flex space-x-4">
+          <div className="flex space-x-4 overflow-x-scroll">
             <div>
               <h2 className="font-bold">Hyperparameter settings:</h2>
               <div
@@ -198,10 +198,10 @@ function App() {
             Start Training
           </Button>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 overflow-x-scroll">
           <div
             style={{ width: 400 }}
-            className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
+            className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200 min-w-72"
           >
             <h2 className="text-xl">Connected workers</h2>
 
