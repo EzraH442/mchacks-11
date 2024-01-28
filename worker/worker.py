@@ -69,10 +69,9 @@ def job_fail(err):
 
 
 class Worker:
-    def __init__(self, server, port=8080):
+    def __init__(self, server):
         self.server = server
-        self.port = port
-        self.addr = self.server + ":" + str(self.port)
+        self.addr = self.server
 
     async def begin_training(self, num_layers, layer_neurons, epsi, learning_rate):
         chromosomes = [num_layers, layer_neurons, epsi, learning_rate]
@@ -113,5 +112,6 @@ class Worker:
                     break
 
 
-NewSocket = Worker("ws://localhost")
+# NewSocket = Worker("wss://localhost:8080")
+NewSocket = Worker("wss://mchacks11.ezrahuang.com/client-socket")
 asyncio.run(NewSocket.wait_and_reply())
