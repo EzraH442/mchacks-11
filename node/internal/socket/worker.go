@@ -37,7 +37,7 @@ func NewWorker(connection *websocket.Conn) *WorkerClient {
 	}
 }
 
-func (c *WorkerClient) SendHyperparameters(hyperparameters interface{}) {
+func (c *WorkerClient) SendHyperparameters(hyperparameters interface{}, channel chan<- interface{}, server *Server) {
 	if c.Status != Idle {
 		fmt.Printf("Client is not idle, cannot send hyperparameters")
 		return
@@ -46,6 +46,20 @@ func (c *WorkerClient) SendHyperparameters(hyperparameters interface{}) {
 	c.Status = Running
 	c.Connection.WriteJSON(HyperparametersMessage{ID: "start-hyperparameters", Hyperparameters: hyperparameters})
 	fmt.Printf("Sent hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), c.Connection.RemoteAddr())
+	ch := c.Connection.CloseHandler
+	c.Connection.SetCloseHandler(func(code int, text string) error {
+		if c.Status == Running {
+			fmt.Printf("Client %s disconnected while running\n", c.Connection.RemoteAddr())
+			// recycle hyperparameters
+			channel <- hyperparameters
+			for _, mc := range server.MasterClients {
+				mc.SendClientDisconnectedMessage(c)
+			}
+
+			delete(server.WorkerClients, c.Connection) // Removing the connection
+		}
+		return ch()(code, text)
+	})
 }
 
 func (c *WorkerClient) SendFinished() {

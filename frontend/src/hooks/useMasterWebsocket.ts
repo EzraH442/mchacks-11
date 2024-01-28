@@ -130,11 +130,12 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
           setResultsStatus((prev) => ({
             ...prev,
-            [hashHyperparameterData(data.hyperparameters)]:
+            [hashHyperparameterData(result.hyperparameters)]:
               ResultsStatus.Finished,
           }));
 
           onRecieveResults(result);
+
           break;
         }
         case 'genetic-algorithm-status-update': {

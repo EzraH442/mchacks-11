@@ -37,7 +37,11 @@ function App() {
       setBestParameters(hyperparameters);
       setTotalResults(totalResults + 1);
     }
-    console.log(results);
+
+    if (Object.keys(results).length === parametersToTrain.length) {
+      console.log('finished');
+      sendJsonMessage({ ID: 'finished' });
+    }
   };
 
   const {
