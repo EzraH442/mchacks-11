@@ -55,14 +55,15 @@ func (tr *Trainer) Train(parameters map[string][]int) {
 	}()
 
 	go func(ch1 <-chan socket.Dummy, ch2 <-chan *socket.WorkerClient) {
-		hyperparameters := <-ch1
-		worker := <-ch2
+		for hyperparameters := range ch1 {
+			worker := <-ch2
 
-		fmt.Printf("Sending hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), worker.Connection.RemoteAddr())
-		worker.SendHyperparameters(hyperparameters)
+			fmt.Printf("Sending hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), worker.Connection.RemoteAddr())
+			worker.SendHyperparameters(hyperparameters)
 
-		for _, mc := range tr.server.MasterClients {
-			mc.SendClientStartedTrainingMessage(worker)
+			for _, mc := range tr.server.MasterClients {
+				mc.SendClientStartedTrainingMessage(worker)
+			}
 		}
 	}(tr.combinations, tr.workers)
 
