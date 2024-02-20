@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* done */
+    --background: 0 0% 98%;
+    /* done */
+    --foreground: 240 5.9% 10%;
+
+    /* done */
+    --card: 0 0% 98%;
+    /* done */
+    --card-foreground: 240 5.9% 10%;
+
+    /* done */
+    --popover: 0 0% 98%;
+    /* done */
+    --popover-foreground: 240 5.9% 10%;
+
+    /* done */
+    --primary: 240 3.7% 15.9%;
+    /* done */
+    --primary-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --secondary: 117 94% 72%;
+    /* done */
+    --secondary-foreground: 240 3.7% 15.9%;
+
+    /* done */
+    --muted: 141.9 69.2% 58%;
+    /* done */
+    --muted-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --accent: 141.9 69.2% 58%;
+    /* done */
+    --accent-foreground: 240, 4.8%, 95.9%;
+
+    /* done */
+    --destructive: 0 84.2% 60.2%;
+    /* done */
+    --destructive-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --border: 141.9 69.2% 58%;
+    /* done */
+    --input: 240 5.9% 90%;
+    /* done */
+    --ring: 141.9 69.2% 58%;
+
+    /* done */
+    --radius: 0rem;
+  }
+
+  .dark {
+    /* done */
+    --background: 240 5.9% 10%;
+    /* done */
+    --foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --card: 240 5.9% 10%;
+    /* done */
+    --card-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --popover: 240 5.9% 10%;
+    /* done */
+    --popover-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --primary: 240 4.8% 95.9%;
+    /* done */
+    --primary-foreground: 240 3.7% 15.9%;
+
+    /* done */
+    --secondary: 141.9 69.2% 58%;
+    /* done */
+    --secondary-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --muted: 141.9 69.2% 58%;
+    /* done */
+    --muted-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --accent: 141.9 69.2% 58%;
+    /* done */
+    --accent-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --destructive: 0 84.2% 60.2%;
+    /* done */
+    --destructive-foreground: 240 4.8% 95.9%;
+
+    /* done */
+    --border: 141.9 69.2% 58%;
+    /* done */
+    --input: 240 5.3% 26.1%;
+    /* done */
+    --ring: 141.9 69.2% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -15,6 +15,7 @@ import { Badge } from './components/ui/badge';
 import { TypographyH2 } from './components/Typography/TypographyH2';
 import SearchSpaceForm from './components/SearchSpaceForm';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { ModeToggle } from './components/ModeToggle';
 
 export interface HyperparameterData {
   layers: number;
@@ -105,30 +106,33 @@ function App() {
 
   return (
     <div className=''>
-      <div className="w-full bg-red-800 text-white text-center py-4">
+      {/* <div className="w-full bg-red-800 text-white text-center py-4">
         <TypographyH1>Distributed Hyperparameter Tuning</TypographyH1>
-      </div>
+      </div> */}
       <div className="w-full h-full p-5 overflow-scroll ">
         <Toaster />
         <div className='max-w-7xl w-fit mx-auto'>
-          <div className="flex flex-row my-4 space-x-4 items-center justify-center md:justify-start">
-            <Button
-              variant="outline"
-              onClick={() => {
-                sendJsonMessage({ ID: 'ping' });
-              }}
-            >
-              Ping
-            </Button>
-            <div className='flex flex-col gap-2'>
-              <Badge
-                variant={connected ? 'secondary' : 'destructive'}
-                className="w-min"
+          <div className="flex flex-row my-4 justify-between">
+            <div className='flex flex-row space-x-4 items-center'>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  sendJsonMessage({ ID: 'ping' });
+                }}
               >
-                {connected ? 'Connected' : 'Disconnected'}
-              </Badge>
-              <TypographySmall>Connected clients: {clients.length}</TypographySmall>
+                Ping
+              </Button>
+              <div className='flex flex-col gap-2'>
+                <Badge
+                  variant={connected ? 'secondary' : 'destructive'}
+                  className="w-min"
+                >
+                  {connected ? 'Connected' : 'Disconnected'}
+                </Badge>
+                <TypographySmall>Connected clients: {clients.length}</TypographySmall>
+              </div>
             </div>
+            <ModeToggle />
           </div>
           <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
             <Card className=''>
@@ -137,16 +141,16 @@ function App() {
               </CardHeader>
               <CardContent>
                 <InitialPointsForm onSubmit={addParameters} disabled={training} />
-                <Button
+                {/* <Button
                   className='mt-4'
-                  variant="destructive"
+                  variant="default"
                   disabled={training}
                   onClick={() => {
                     clear();
                   }}
                 >
                   Clear
-                </Button>
+                </Button> */}
               </CardContent>
             </Card >
             <Card className=''>
@@ -157,16 +161,16 @@ function App() {
               </CardHeader>
               <CardContent>
                 <SearchSpaceForm onSubmit={addParameters} disabled={training} />
-                <Button
+                {/* <Button
                   className='mt-4'
-                  variant="destructive"
+                  variant="default"
                   disabled={training}
                   onClick={() => {
                     clear();
                   }}
                 >
                   Clear
-                </Button>
+                </Button> */}
               </CardContent>
             </Card>
             <div className=''>
