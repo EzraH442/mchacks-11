@@ -22,7 +22,7 @@ services:
         tag: "{{.ImageName}}/{{.Name}}/{{.ID}}"
   mchacks-react:
     build:
-      context: ./frontend
+      context: ./distributed-hyperparameter-optimization
     logging:
       driver: syslog
       options:

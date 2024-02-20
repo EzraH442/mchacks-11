@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { HyperparameterData } from '../App';
+import { HyperparameterData } from '@/app/page';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

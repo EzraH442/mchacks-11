@@ -17,6 +17,9 @@ import { TypographyH2 } from '@/components/Typography/TypographyH2';
 import SearchSpaceForm from '@/components/SearchSpaceForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ModeToggle } from '@/components/ModeToggle';
+import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
+import { Github } from 'lucide-react';
 
 export interface HyperparameterData {
   layers: number;
@@ -114,26 +117,41 @@ function App() {
         <Toaster />
         <div className='max-w-7xl w-fit mx-auto'>
           <div className="flex flex-row my-4 justify-between">
-            <div className='flex flex-row space-x-4 items-center'>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  sendJsonMessage({ ID: 'ping' });
-                }}
-              >
-                Ping
-              </Button>
-              <div className='flex flex-col gap-2'>
-                <Badge
-                  variant={connected ? 'secondary' : 'destructive'}
-                  className="w-min"
+            <Card className=''>
+              <CardContent className='flex flex-row space-x-4 items-center p-6'>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    sendJsonMessage({ ID: 'ping' });
+                  }}
                 >
-                  {connected ? 'Connected' : 'Disconnected'}
-                </Badge>
-                <TypographySmall>Connected clients: {clients.length}</TypographySmall>
-              </div>
+                  Ping
+                </Button>
+                <Separator orientation="vertical" className='h-16' />
+                <div className='flex flex-col gap-2'>
+                  <Badge
+                    variant={connected ? 'secondary' : 'destructive'}
+                    className="w-min"
+                  >
+                    {connected ? 'Connected' : 'Disconnected'}
+                  </Badge>
+                  <TypographySmall>Connected clients: {clients.length}</TypographySmall>
+                </div>
+              </CardContent>
+            </Card>
+            <div className='flex flex-col md:flex-row gap-2'>
+              <Link
+                href='https://github.com/ezraH442/mchacks-11/'
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button variant="outline" size="icon">
+                  <Github />
+                  <span className="sr-only">GitHub</span>
+                </Button>
+              </Link>
+              <ModeToggle />
             </div>
-            <ModeToggle />
           </div>
           <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
             <Card className=''>

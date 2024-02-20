@@ -7,7 +7,7 @@ import {
 } from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
-import { HyperparameterData } from '../App';
+import { HyperparameterData } from '@/app/page';
 import { hashHyperparameterData } from '../lib/utils';
 
 interface IUserMasterWebSocket {
@@ -107,10 +107,10 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
             prev.map((client) =>
               client.id === workerId
                 ? {
-                    ...client,
-                    status: ClientStatus.Working,
-                    currentTask: hyperparameters,
-                  }
+                  ...client,
+                  status: ClientStatus.Working,
+                  currentTask: hyperparameters,
+                }
                 : client,
             ),
           );
