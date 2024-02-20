@@ -3,11 +3,18 @@ import ClientCard from './components/ClientCard';
 import { Toaster } from './components/ui/toaster';
 import useMasterWebSocket from './hooks/useMasterWebsocket';
 import { useEffect, useState } from 'react';
-import HypForm, { formSchema } from './components/form';
+import InitialPointsForm, { formSchema } from './components/InitialPointsForm';
 import { z } from 'zod';
 import { hashHyperparameterData, round } from './lib/utils';
-import HyperparametersView from './components/HyperparamsView';
+import HyperparametersView from './components/HyperParamsView';
 import { EmptyHyperparameterData, ResultsStatus } from './lib/client';
+import { TypographyH1 } from './components/Typography/TypographyH1';
+import { TypographySmall } from './components/Typography/TypographySmall';
+import { TypographyLarge } from './components/Typography/TypographyLarge';
+import { Badge } from './components/ui/badge';
+import { TypographyH2 } from './components/Typography/TypographyH2';
+import SearchSpaceForm from './components/SearchSpaceForm';
+import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
 
 export interface HyperparameterData {
   layers: number;
@@ -97,53 +104,42 @@ function App() {
   console.log(resultsStatus);
 
   return (
-    <div>
-      <div className="w-full bg-red-700 px-4 text-white font-sans">
-        <h1 className="text-2xl py-4">Distributed Hyperparameter Tuning</h1>
+    <div className=''>
+      <div className="w-full bg-red-800 text-white text-center py-4">
+        <TypographyH1>Distributed Hyperparameter Tuning</TypographyH1>
       </div>
-      <div className="w-full h-full px-4 mt-4">
+      <div className="w-full h-full p-5 overflow-scroll ">
         <Toaster />
-        <div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              sendJsonMessage({ ID: 'ping' });
-            }}
-          >
-            Ping
-          </Button>
-          <div className="flex space-x-4">
-            <div className="flex flex-col">
-              <span className="font-bold">Connection status:</span>
-
-              <span
-                className={`${
-                  connected
-                    ? 'text-green-900 bg-green-300'
-                    : 'bg-red-500 text-white'
-                } px-2 py-1 rounded-lg text-center w-36`}
+        <div className='max-w-7xl w-fit mx-auto'>
+          <div className="flex flex-row my-4 space-x-4 items-center justify-center md:justify-start">
+            <Button
+              variant="outline"
+              onClick={() => {
+                sendJsonMessage({ ID: 'ping' });
+              }}
+            >
+              Ping
+            </Button>
+            <div className='flex flex-col gap-2'>
+              <Badge
+                variant={connected ? 'secondary' : 'destructive'}
+                className="w-min"
               >
                 {connected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold">Connected clients:</span>
-              <span>{clients.length}</span>
+              </Badge>
+              <TypographySmall>Connected clients: {clients.length}</TypographySmall>
             </div>
           </div>
-
-          <div className="my-4" />
-          <div className="flex space-x-4 overflow-x-scroll">
-            <div>
-              <h2 className="font-bold">Hyperparameter settings:</h2>
-              <div
-                style={{ width: 500 }}
-                className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200"
-              >
-                <HypForm onSubmit={addParameters} disabled={training} />
+          <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+            <Card className=''>
+              <CardHeader>
+                <CardTitle>Initial Point to Evaluate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <InitialPointsForm onSubmit={addParameters} disabled={training} />
                 <Button
-                  className="mt-4 bg-red-500 text-white hover:bg-red-800"
-                  variant="outline"
+                  className='mt-4'
+                  variant="destructive"
                   disabled={training}
                   onClick={() => {
                     clear();
@@ -151,10 +147,93 @@ function App() {
                 >
                   Clear
                 </Button>
+              </CardContent>
+            </Card >
+            <Card className=''>
+              <CardHeader>
+                <CardTitle>
+                  Search Space
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SearchSpaceForm onSubmit={addParameters} disabled={training} />
+                <Button
+                  className='mt-4'
+                  variant="destructive"
+                  disabled={training}
+                  onClick={() => {
+                    clear();
+                  }}
+                >
+                  Clear
+                </Button>
+              </CardContent>
+            </Card>
+            <div className=''>
+              <Button
+                className="mb-4"
+                variant="outline"
+                disabled={training || !connected}
+                onClick={() => {
+                  setLastHyp(
+                    hashHyperparameterData(
+                      parametersToTrain[parametersToTrain.length - 1],
+                    ),
+                  );
+                  startTraining(parametersToTrain);
+                }}
+              >
+                Start Training
+              </Button>
+              <div className="flex flex-col space-y-3 overflow-y-scroll">
+                <Card className="">
+                  <CardHeader>
+                    <CardTitle>
+                      Connected Workers
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {clients.map((client) => (
+                      <ClientCard key={client.id} client={client} />
+                    ))}
+                    {/* Not sure if this will look good with the client cards in it */}
+                  </CardContent>
+                </Card>
+                <Card className="">
+                  <CardHeader>
+                    <CardTitle>
+                      Progress
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Trials Remaining: {parametersToTrain.length - totalResults}</p>
+                    <p>Best Loss: {round(bestResult, 3)}</p>
+                    <p>Best Trial: </p>
+                    {/* Implement! */}
+                    <p>Trials</p>
+                    {totalResults !== 0 ? (
+                      <HyperparametersView hyperparameters={bestParameters} />
+                    ) : (
+                      <p>No results yet</p>
+                    )}
+                    {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
+                      <!-- epoch number-->
+                      <tr>
+                          <td>Epoch:</td>
+                          <td id="epochnumber">1</td>
+                      </tr>
+                      <!-- best accuracy so far-->
+                      <tr>
+                          <td>Best Accuracy:</td>
+                          <td id="bestaccuracy"></td>
+                      </tr>
+                  </table> */}
+                  </CardContent>
+                </Card>
               </div>
             </div>
-            <div>
-              <h2 className="font-bold">Hyperparameters to train:</h2>
+            {/* <div>
+              <TypographyH2>Hyperparameters to train:</TypographyH2>
               <div
                 className="border bg-gray-50 border-dashed rounded-md py-2 border-gray-200 items-center"
                 style={{ width: 500 }}
@@ -182,79 +261,13 @@ function App() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <Button
-            className="mt-4 mb-4"
-            variant="outline"
-            disabled={training || !connected}
-            onClick={() => {
-              setLastHyp(
-                hashHyperparameterData(
-                  parametersToTrain[parametersToTrain.length - 1],
-                ),
-              );
-              startTraining(parametersToTrain);
-            }}
-          >
-            Start Training
-          </Button>
-        </div>
-        <div className="flex space-x-3 overflow-x-scroll">
-          <div
-            style={{ width: 400 }}
-            className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200 min-w-72"
-          >
-            <h2 className="text-xl">Connected workers</h2>
+            </div> */}
 
-            <div className="my-4" />
-            <div className="flex space-y-2 px-2 flex-col">
-              {clients.map((client) => (
-                <ClientCard key={client.id} client={client} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="border bg-gray-50 border-dashed rounded-md px-3 py-2 border-gray-200">
-              <h2 className=" text-xl">Progress</h2>
-
-              <div className="my-4" />
-              <div className="flex space-x-2">
-                <div className="flex flex-col min-w-60">
-                  <span className="font-bold">Hyperparameters Remaining</span>
-                  <span>{parametersToTrain.length - totalResults}</span>
-                </div>
-                <div className="flex flex-col min-w-36">
-                  <span className="font-bold">Best Accuracy</span>
-                  <span>{round(bestResult, 3)}</span>
-                </div>
-                <div className="flex flex-col min-w-36">
-                  <span className="font-bold">Hyperparameters</span>
-
-                  {totalResults !== 0 ? (
-                    <HyperparametersView hyperparameters={bestParameters} />
-                  ) : (
-                    <span>No results yet</span>
-                  )}
-                </div>
-              </div>
-              {/* <table class="box" style="display: flex; flex-direction: row; width:20vw" >
-          <!-- epoch number-->
-          <tr>
-              <td>Epoch:</td>
-              <td id="epochnumber">1</td>
-          </tr>
-          <!-- best accuracy so far-->
-          <tr>
-              <td>Best Accuracy:</td>
-              <td id="bestaccuracy"></td>
-          </tr>
-      </table> */}
-            </div>
           </div>
         </div>
+
       </div>
-    </div>
+    </div >
   );
 }
 

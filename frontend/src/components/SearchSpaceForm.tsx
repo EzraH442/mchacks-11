@@ -48,7 +48,7 @@ interface HypFormProps {
   disabled?: boolean;
 }
 
-const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
+const SearchSpaceForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     defaultValues: {
       layers: 1,
@@ -92,7 +92,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Layers</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -105,7 +108,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Neurons in layer {i + 1}</FormLabel>
-                <Input {...field} type="number" />
+                <div className='grid grid-cols-2 gap-x-8'>
+                  <Input {...field} type="number" />
+                  <Input {...field} type="number" />
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -117,7 +123,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Epsilon min</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -128,7 +137,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Epsilon max</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -139,7 +151,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Epsilon step</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -150,7 +165,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Learning rate min</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -161,7 +179,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Learning rate max</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -172,7 +193,10 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Learning rate step</FormLabel>
-              <Input {...field} type="number" />
+              <div className='grid grid-cols-2 gap-x-8'>
+                <Input {...field} type="number" />
+                <Input {...field} type="number" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -180,11 +204,11 @@ const HypForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
         <div className="my-4" />
 
         <Button disabled={disabled} onClick={form.handleSubmit(onSubmit)}>
-          Add Parameters
+          Add Search Space
         </Button>
       </Form>
     </div>
   );
 };
 
-export default HypForm;
+export default SearchSpaceForm;
