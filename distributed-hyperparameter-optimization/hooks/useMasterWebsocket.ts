@@ -20,8 +20,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
   const [training, setTraining] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
-
+  const [clients, setClients] = useState<Record<string, Client>>({});
   const [resultsStatus, setResultsStatus] = useState<
     Record<string, ResultsStatus>
   >({});
@@ -72,11 +71,12 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
           );
           break;
         }
+
         case 'client-connected': {
           const worker = data.worker;
-          setClients((prev) => [
-            ...prev,
-            {
+          const newClients = {
+            ...clients,
+            [worker.worker_id]: {
               id: worker.worker_id,
               ip: worker.ip,
               status:
@@ -86,14 +86,19 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
               currentTask: EmptyHyperparameterData,
               name: worker.name,
             },
-          ]);
+          };
+          setClients(newClients);
           break;
         }
+
         case 'client-disconnected': {
           const workerId = data.worker.worker_id;
-          setClients((prev) => prev.filter((client) => client.id !== workerId));
+          const newClients = { ...clients };
+          delete newClients[workerId];
+          setClients(newClients);
           break;
         }
+
         case 'client-started-training': {
           const workerId = data.worker_id;
           const hyperparameters = data.parameters as HyperparameterData;
@@ -103,30 +108,26 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
             [hashHyperparameterData(hyperparameters)]: ResultsStatus.Started,
           }));
 
-          setClients((prev) =>
-            prev.map((client) =>
-              client.id === workerId
-                ? {
-                  ...client,
-                  status: ClientStatus.Working,
-                  currentTask: hyperparameters,
-                }
-                : client,
-            ),
-          );
+          const newClients = {
+            ...clients,
+            workerId: {
+              ...clients[workerId],
+              status: ClientStatus.Working,
+              currentTask: hyperparameters,
+            },
+          };
+          setClients(newClients);
           break;
         }
         case 'client-finished-training': {
           const workerId = data.worker_id;
           const result = data.result;
-          console.log('results', result);
-          setClients((prev) =>
-            prev.map((client) =>
-              client.id === workerId
-                ? { ...client, status: ClientStatus.Idle }
-                : client,
-            ),
-          );
+
+          const newClients = { ...clients };
+          newClients[workerId] = {
+            ...newClients[workerId],
+            status: ClientStatus.Idle,
+          };
 
           setResultsStatus((prev) => ({
             ...prev,
@@ -153,11 +154,15 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     },
   });
 
-  const startTraining = (parameters: HyperparameterData[]) => {
+  const startTraining = (
+    initialParameters: HyperparameterData,
+    searchSpace: any,
+  ) => {
     setTraining(true);
     sendJsonMessage({
       ID: 'start-training',
-      parameters,
+      params: initialParameters,
+      search_space: searchSpace,
     });
   };
 

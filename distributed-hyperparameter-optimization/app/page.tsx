@@ -1,4 +1,4 @@
-"use client"
+'use client';
 import { Button } from '@/components/ui/button';
 import ClientCard from '@/components/ClientCard';
 import { Toaster } from '@/components/ui/toaster';
@@ -20,6 +20,7 @@ import { ModeToggle } from '@/components/ModeToggle';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
+import { set } from 'react-hook-form';
 
 export interface HyperparameterData {
   layers: number;
@@ -74,51 +75,47 @@ function App() {
         : 'ws://localhost:8080/master',
   });
 
-  const [parametersToTrain, setParametersToTrain] = useState<
-    HyperparameterData[]
-  >([]);
+  const [initialPoint, setInitialPoint] = useState<HyperparameterData>(
+    EmptyHyperparameterData,
+  );
 
-  const addParameters = (data: z.infer<typeof formSchema>) => {
-    for (let i = data.epsilonMin; i <= data.epsilonMax; i += data.epsilonStep) {
-      for (
-        let j = data.learningRateMin;
-        j <= data.learningRateMax;
-        j += data.learningRateStep
-      ) {
-        setParametersToTrain((prev) => [
-          ...prev,
-          {
-            layers: data.layers,
-            neuronsPerLayer: data.neuronsPerLayer,
-            epsilon: i,
-            learningRate: j,
-          },
-        ]);
-      }
-    }
+  const [searchSpace, setSearchSpace] = useState<any>({});
+
+  const handleInitialPointSubmit = (data: z.infer<typeof formSchema>) => {
+    setInitialPoint({
+      layers: data.layers,
+      neuronsPerLayer: data.neuronsPerLayer,
+      epsilon: data.epsilonMax,
+      learningRate: data.learningRateMax,
+    });
   };
+
+  const handleSearchSpaceSubmit = (data: any) => {
+    setSearchSpace(data);
+  };
+
   const clear = () => {
-    setParametersToTrain([]);
+    setInitialPoint(EmptyHyperparameterData);
     setResults({});
     setTotalResults(0);
     setBestResult(0);
     setBestParameters(EmptyHyperparameterData);
   };
 
-  console.log(parametersToTrain);
+  console.log(initialPoint);
   console.log(resultsStatus);
 
   return (
-    <div className=''>
+    <div className="">
       {/* <div className="w-full bg-red-800 text-white text-center py-4">
         <TypographyH1>Distributed Hyperparameter Tuning</TypographyH1>
       </div> */}
       <div className="w-full h-full p-5 overflow-scroll ">
         <Toaster />
-        <div className='max-w-7xl w-fit mx-auto'>
+        <div className="max-w-7xl w-fit mx-auto">
           <div className="flex flex-row my-4 justify-between">
-            <Card className=''>
-              <CardContent className='flex flex-row space-x-4 items-center p-6'>
+            <Card className="">
+              <CardContent className="flex flex-row space-x-4 items-center p-6">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -127,21 +124,23 @@ function App() {
                 >
                   Ping
                 </Button>
-                <Separator orientation="vertical" className='h-16' />
-                <div className='flex flex-col gap-2'>
+                <Separator orientation="vertical" className="h-16" />
+                <div className="flex flex-col gap-2">
                   <Badge
                     variant={connected ? 'secondary' : 'destructive'}
                     className="w-min"
                   >
                     {connected ? 'Connected' : 'Disconnected'}
                   </Badge>
-                  <TypographySmall>Connected clients: {clients.length}</TypographySmall>
+                  <TypographySmall>
+                    Connected clients: {Object.keys(clients).length}
+                  </TypographySmall>
                 </div>
               </CardContent>
             </Card>
-            <div className='flex flex-col md:flex-row gap-2'>
+            <div className="flex flex-col md:flex-row gap-2">
               <Link
-                href='https://github.com/ezraH442/mchacks-11/'
+                href="https://github.com/ezraH442/mchacks-11/"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -154,32 +153,15 @@ function App() {
             </div>
           </div>
           <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-            <Card className=''>
+            <Card className="">
               <CardHeader>
                 <CardTitle>Initial Point to Evaluate</CardTitle>
               </CardHeader>
               <CardContent>
-                <InitialPointsForm onSubmit={addParameters} disabled={training} />
-                {/* <Button
-                  className='mt-4'
-                  variant="default"
+                <InitialPointsForm
+                  onSubmit={handleInitialPointSubmit}
                   disabled={training}
-                  onClick={() => {
-                    clear();
-                  }}
-                >
-                  Clear
-                </Button> */}
-              </CardContent>
-            </Card >
-            <Card className=''>
-              <CardHeader>
-                <CardTitle>
-                  Search Space
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SearchSpaceForm onSubmit={addParameters} disabled={training} />
+                />
                 {/* <Button
                   className='mt-4'
                   variant="default"
@@ -192,18 +174,34 @@ function App() {
                 </Button> */}
               </CardContent>
             </Card>
-            <div className=''>
+            <Card className="">
+              <CardHeader>
+                <CardTitle>Search Space</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SearchSpaceForm
+                  onSubmit={handleSearchSpaceSubmit}
+                  disabled={training}
+                />
+                {/* <Button
+                  className='mt-4'
+                  variant="default"
+                  disabled={training}
+                  onClick={() => {
+                    clear();
+                  }}
+                >
+                  Clear
+                </Button> */}
+              </CardContent>
+            </Card>
+            <div className="">
               <Button
                 className="mb-4"
                 variant="outline"
                 disabled={training || !connected}
                 onClick={() => {
-                  setLastHyp(
-                    hashHyperparameterData(
-                      parametersToTrain[parametersToTrain.length - 1],
-                    ),
-                  );
-                  startTraining(parametersToTrain);
+                  startTraining(initialPoint, searchSpace);
                 }}
               >
                 Start Training
@@ -211,12 +209,10 @@ function App() {
               <div className="flex flex-col space-y-3 overflow-y-scroll">
                 <Card className="">
                   <CardHeader>
-                    <CardTitle>
-                      Connected Workers
-                    </CardTitle>
+                    <CardTitle>Connected Workers</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {clients.map((client) => (
+                    {Object.values(clients).map((client) => (
                       <ClientCard key={client.id} client={client} />
                     ))}
                     {/* Not sure if this will look good with the client cards in it */}
@@ -224,12 +220,13 @@ function App() {
                 </Card>
                 <Card className="">
                   <CardHeader>
-                    <CardTitle>
-                      Progress
-                    </CardTitle>
+                    <CardTitle>Progress</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p>Trials Remaining: {parametersToTrain.length - totalResults}</p>
+                    <p>
+                      Trials Remaining: WIP (implement realtime feedback)
+                      {/* Trials Remaining: WIP {initialPoint.length - totalResults} */}
+                    </p>
                     <p>Best Loss: {round(bestResult, 3)}</p>
                     <p>Best Trial: </p>
                     {/* Implement! */}
@@ -285,12 +282,10 @@ function App() {
                 </div>
               </div>
             </div> */}
-
           </div>
         </div>
-
       </div>
-    </div >
+    </div>
   );
 }
 
