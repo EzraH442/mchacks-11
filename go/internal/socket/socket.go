@@ -3,8 +3,11 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -26,6 +29,16 @@ type TestResults struct {
 	ID              string      `json:"ID"`
 	Accuracy        []float64   `json:"accuracy"`
 	Hyperparameters interface{} `json:"hyperparameters"`
+}
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+type UploadTrainingFilesResponse struct {
+	ModelFileUUID      string `json:"model-file-uuid"`
+	TrainingFileUUID   string `json:"training-file-uuid"`
+	EvaluationFileUUID string `json:"evaluation-file-uuid"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -58,9 +71,94 @@ func New(
 func (s *Server) Start() error {
 	http.HandleFunc("/master", s.masterHandler)
 	http.HandleFunc("/", s.workerHandler)
+	http.HandleFunc("/upload-training-files", s.uploadTrainingFilesHandler)
 	err := http.ListenAndServe(":8080", nil)
 	fmt.Print(err)
 	return err
+}
+
+func (s *Server) uploadTrainingFilesHandler(res http.ResponseWriter, req *http.Request) {
+	modelFile, _, err := req.FormFile("model-file")
+
+	if err != nil {
+		fmt.Println(err)
+		res.WriteHeader(400)
+		b, _ := json.Marshal(ErrorResponse{Message: err.Error()})
+		res.Write(b)
+		return
+	}
+
+	trainingFile, _, err := req.FormFile("training-file")
+
+	if err != nil {
+		fmt.Println(err)
+		res.WriteHeader(400)
+		b, _ := json.Marshal(ErrorResponse{Message: err.Error()})
+		res.Write(b)
+		return
+	}
+
+	evaluationFile, _, err := req.FormFile("evaluation-file")
+
+	if err != nil {
+		fmt.Println(err)
+		res.WriteHeader(400)
+		b, _ := json.Marshal(ErrorResponse{Message: err.Error()})
+		res.Write(b)
+		return
+	}
+
+	modelFileUUID := uuid.New().String()
+	trainingFileUUID := uuid.New().String()
+	evaluationFileUUID := uuid.New().String()
+
+	b, _ := json.Marshal(UploadTrainingFilesResponse{
+		ModelFileUUID:      modelFileUUID,
+		TrainingFileUUID:   trainingFileUUID,
+		EvaluationFileUUID: evaluationFileUUID,
+	})
+
+	res.Write(b)
+
+	modelFilePath := fmt.Sprintf("uploads/%s", modelFileUUID)
+	trainingFilePath := fmt.Sprintf("uploads/%s", trainingFileUUID)
+	evaluationFilePath := fmt.Sprintf("uploads/%s", evaluationFileUUID)
+
+	modelFileButes, err := io.ReadAll(modelFile)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	trainingFileButes, err := io.ReadAll(trainingFile)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	evaluationFileButes, err := io.ReadAll(evaluationFile)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = os.WriteFile(modelFilePath, modelFileButes, 0644)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = os.WriteFile(trainingFilePath, trainingFileButes, 0644)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = os.WriteFile(evaluationFilePath, evaluationFileButes, 0644)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func (s *Server) AddWorkerHandler(id string, handler func(connection *websocket.Conn, message []byte)) {
