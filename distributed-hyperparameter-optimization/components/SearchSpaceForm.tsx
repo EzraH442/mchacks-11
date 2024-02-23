@@ -83,38 +83,42 @@ const SearchSpaceForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
     <div>
       <Form {...form}>
         {keys.length === 0 && (
-          <div className="px-3 border-dashed border-gray-300 border py-2 flex items-center justify-center">
+          <div className="px-3 border-dashed border-gray-200 border py-2 flex items-center justify-center">
             <p className="text-center">No fields added</p>
           </div>
         )}
 
         {keys.map((fieldName, index) => {
           return (
-            <FormField
-              control={form.control}
+            <div
               key={fieldName}
-              name={`fields[${index}]`}
-              render={({ field }) => {
-                const param = stagingArea.hyperparameters.get(fieldName);
+              className="bg-gray-100 p-4 my-4 rounded-lg border border-gray-200"
+            >
+              <FormField
+                control={form.control}
+                name={`fields[${index}]`}
+                render={({ field }) => {
+                  const param = stagingArea.hyperparameters.get(fieldName);
 
-                if (!param) return <></>;
+                  if (!param) return <></>;
 
-                switch (param?.parameterType) {
-                  case EHyperparameterParameterType.CHOICE:
-                    return (
-                      <ChoiceSearchSpace
-                        name={param.name}
-                        type={param.dataType}
-                        array={param.array}
-                      />
-                    );
-                  case EHyperparameterParameterType.UNIFORM:
-                    return <UniformSearchSpace name={fieldName} />;
-                  case EHyperparameterParameterType.QUNIFORM:
-                    return <QUniformSearchSpace name={fieldName} />;
-                }
-              }}
-            />
+                  switch (param?.parameterType) {
+                    case EHyperparameterParameterType.CHOICE:
+                      return (
+                        <ChoiceSearchSpace
+                          name={param.name}
+                          type={param.dataType}
+                          array={param.array}
+                        />
+                      );
+                    case EHyperparameterParameterType.UNIFORM:
+                      return <UniformSearchSpace name={fieldName} />;
+                    case EHyperparameterParameterType.QUNIFORM:
+                      return <QUniformSearchSpace name={fieldName} />;
+                  }
+                }}
+              />
+            </div>
           );
         })}
       </Form>

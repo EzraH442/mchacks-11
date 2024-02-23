@@ -3,13 +3,14 @@ import { ControllerRenderProps } from 'react-hook-form';
 import { FormItem, FormLabel } from '../ui/form';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { EHyperparameterDataType } from '@/types';
 import { Checkbox } from '../ui/checkbox';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { Hyperparameter, IOption, IOptions } from '@/models/StagingArea';
 import { v4 } from 'uuid';
+import { Separator } from '../ui/separator';
 
 const determineDefaultChoiceValue = (type: EHyperparameterDataType) => {
   switch (type) {
@@ -60,7 +61,7 @@ const InputBoolChoice: React.FC<IInputChoiceProps> = observer(({ option }) => {
     <Checkbox
       defaultChecked={option.value}
       onCheckedChange={(e) => {
-        // option.setValue();
+        option.setValue(e === true ? true : false);
       }}
     />
   );
@@ -122,14 +123,15 @@ const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
             );
           })}
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() =>
               ss.addOption(v4(), determineDefaultChoiceValue(type))
             }
           >
-            Add choice
+            <Plus size={16} /> Add option
           </Button>
         </div>
+        <Separator orientation="horizontal" />
         <Button
           variant="destructive"
           onClick={() => stagingArea.removeHyperparameter(name)}
