@@ -4,7 +4,7 @@ import ClientCard from '@/components/ClientCard';
 import { Toaster } from '@/components/ui/toaster';
 import useMasterWebSocket from '@/hooks/useMasterWebsocket';
 import { useEffect, useState } from 'react';
-import InitialPointsForm, { formSchema } from '@/components/InitialPointsForm';
+import InitialPointsForm, { formSchema } from '@/components/InitialPointForm';
 import { z } from 'zod';
 import { hashHyperparameterData, round } from '@/lib/utils';
 import HyperparametersView from '@/components/HyperParamsView';
@@ -161,7 +161,7 @@ function App() {
                 <CardTitle>Search Space</CardTitle>
               </CardHeader>
               <CardContent>
-                <InitialPointsForm
+                <SearchSpaceForm
                   onSubmit={handleInitialPointSubmit}
                   disabled={training}
                 />
@@ -182,7 +182,7 @@ function App() {
                 <CardTitle>Initial point to evaluate</CardTitle>
               </CardHeader>
               <CardContent>
-                <SearchSpaceForm
+                <InitialPointsForm
                   onSubmit={handleSearchSpaceSubmit}
                   disabled={training}
                 />
