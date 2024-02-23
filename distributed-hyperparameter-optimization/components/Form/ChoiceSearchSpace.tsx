@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import { EHyperparameterDataType } from '@/types';
 import { Checkbox } from '../ui/checkbox';
 import { observer } from 'mobx-react-lite';
+import React from 'react';
 
 const determineDefaultChoiceValue = (type: EHyperparameterDataType) => {
   switch (type) {
@@ -19,43 +20,55 @@ const determineDefaultChoiceValue = (type: EHyperparameterDataType) => {
   }
 };
 
-const InputNumberChoice = (props: { choice: IChoice }) => {
+interface IInputChoiceProps {
+  choice: IChoice;
+}
+
+const InputNumberChoice: React.FC<IInputChoiceProps> = ({ choice }) => {
   return (
     <Input
       type="number"
-      value={props.choice.value}
+      step="any"
+      defaultValue={choice.value}
       onChange={(e) => {
-        props.choice.setValue(e.target.valueAsNumber);
+        choice.setValue(e.target.valueAsNumber);
       }}
     />
   );
 };
 
-const InputStringChoice = (props: { choice: IChoice }) => {
+const InputStringChoice: React.FC<IInputChoiceProps> = ({ choice }) => {
   return (
     <Input
       type="text"
-      value={props.choice.value}
+      defaultValue={choice.value}
       onChange={(e) => {
-        props.choice.setValue(e.target.value);
+        console.log('shit', e.target.value);
+        choice.setValue(e.target.value);
       }}
     />
   );
 };
 
-const InputBoolChoice = (props: { choice: IChoice }) => {
+const InputBoolChoice: React.FC<IInputChoiceProps> = ({ choice }) => {
   return (
     <Checkbox
-      checked={props.choice.value}
+      defaultChecked={choice.value}
       onCheckedChange={(e) => {
-        props.choice.setValue(e === true ? true : false);
+        choice.setValue(e === true ? true : false);
       }}
     />
   );
 };
 
-const ChoiceSearchSpace = observer(
-  ({ index, type }: { index: number; type: EHyperparameterDataType }) => {
+interface IChoiceSearchSpaceProps {
+  index: number;
+  type: EHyperparameterDataType;
+  array?: boolean;
+}
+
+const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
+  ({ index, type, array }) => {
     const store = useStore(null);
     const { searchSpace, hyperparameters } = store;
     const options = searchSpace.options.at(index) as ISearchSpaceChoice;
@@ -82,11 +95,11 @@ const ChoiceSearchSpace = observer(
     const getInputElement = (index: number, choice: IChoice) => {
       switch (type) {
         case EHyperparameterDataType.NUMBER:
-          return <InputNumberChoice choice={choice} />;
+          return <InputNumberChoice choice={choice} key={choice.key} />;
         case EHyperparameterDataType.TEXT:
-          return <InputStringChoice choice={choice} />;
+          return <InputStringChoice choice={choice} key={choice.key} />;
         case EHyperparameterDataType.BOOL:
-          return <InputBoolChoice choice={choice} />;
+          return <InputBoolChoice choice={choice} key={choice.key} />;
       }
     };
 
@@ -96,7 +109,7 @@ const ChoiceSearchSpace = observer(
         <div>
           {options.choices.map((choice, i) => {
             return (
-              <div key={i} className={getDivStyle()}>
+              <div key={choice.key} className={getDivStyle()}>
                 {getInputElement(i, choice)}
                 <button
                   onClick={() => store.removeHyperparameterChoice(index, i)}

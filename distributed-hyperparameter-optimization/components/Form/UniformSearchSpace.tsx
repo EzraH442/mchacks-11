@@ -23,7 +23,8 @@ const UniformSearchSpace = observer(({ index }: { index: number }) => {
       <div>
         <p>min:</p>
         <Input
-          // type="number"
+          type="number"
+          step="any"
           value={options.min}
           onChange={(e) => {
             options.setMin(e.target.valueAsNumber);
@@ -32,6 +33,7 @@ const UniformSearchSpace = observer(({ index }: { index: number }) => {
         <p>max:</p>
         <Input
           type="number"
+          step="any"
           value={options.max}
           onChange={(e) => {
             options.setMax(e.target.valueAsNumber);

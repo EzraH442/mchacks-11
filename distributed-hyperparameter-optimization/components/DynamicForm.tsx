@@ -83,6 +83,7 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
                         <ChoiceSearchSpace
                           index={index}
                           type={associatedField.type}
+                          array={associatedField.array}
                         />
                       );
                     case EHyperparameterParameterType.UNIFORM:
