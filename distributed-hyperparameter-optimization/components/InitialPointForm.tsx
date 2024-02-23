@@ -95,11 +95,6 @@ const InitialPointsForm: React.FC<HypFormProps> = observer(
       },
     });
 
-    const { fields, append, remove } = useFieldArray({
-      control: form.control,
-      name: 'x',
-    });
-
     const keys = Array.from(stagingArea.hyperparameters.keys());
 
     return (
