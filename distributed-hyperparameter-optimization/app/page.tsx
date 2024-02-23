@@ -20,7 +20,6 @@ import { ModeToggle } from '@/components/ModeToggle';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
-import { set } from 'react-hook-form';
 import { useStore } from '@/store';
 import { getSnapshot } from 'mobx-state-tree';
 
@@ -33,7 +32,6 @@ export interface HyperparameterData {
 
 function App() {
   const store = useStore(null);
-  console.log(getSnapshot(store));
 
   const [results, setResults] = useState<Record<string, number>>({});
   const [totalResults, setTotalResults] = useState(0);

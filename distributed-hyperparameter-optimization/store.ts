@@ -48,6 +48,14 @@ export const SearchSpaceStringChoice = types.model('SearchSpaceStringChoice', {
   choices: types.array(types.string),
 });
 
+export const SearchSpaceFallbackChoice = types.model(
+  'SearchSpaceFallbackChoice',
+  {
+    fieldName: types.string,
+    choices: types.array(types.frozen()),
+  },
+);
+
 export const SearchSpaceUniform = types.model('SearchSpaceUniform', {
   fieldName: types.string,
   min: types.number,
@@ -65,6 +73,7 @@ export const SearchSpaceOption = types.union(
   SearchSpaceNumberChoice,
   SearchSpaceBoolChoice,
   SearchSpaceStringChoice,
+  SearchSpaceFallbackChoice,
   SearchSpaceUniform,
   SearchSpaceQUniform,
 );
@@ -115,23 +124,23 @@ const Store = types
       switch (field.hpType) {
         case EHyperparameterParameterType.CHOICE:
           self.searchSpace.addChoice({
-            name: field.fieldName,
+            fieldName: field.fieldName,
             choices: [0],
           });
           break;
         case EHyperparameterParameterType.UNIFORM:
           self.searchSpace.addChoice({
-            name: field.fieldName,
+            fieldName: field.fieldName,
             min: 0,
             max: 1,
           });
           break;
         case EHyperparameterParameterType.QUNIFORM:
           self.searchSpace.addChoice({
-            name: field.fieldName,
+            fieldName: field.fieldName,
             min: 0,
-            max: 1,
-            q: 0.01,
+            max: 10,
+            q: 1,
           });
           break;
       }
@@ -155,7 +164,20 @@ export function initializeStore(snapshot = null) {
       },
       searchSpace: {
         options: DefaultSearchSpace.map((s, i) => {
-          if (DefaultFormProps[i].array) return null; // TODO model array fields
+          if (DefaultFormProps[i].array) {
+            if (
+              DefaultFormProps[i].hpType !== EHyperparameterParameterType.CHOICE
+            ) {
+              console.error('Invalid array hpType');
+              return null;
+            }
+
+            console.log('creating array choice', s.fieldName, s.options);
+            return {
+              fieldName: s.fieldName,
+              choices: s.options,
+            };
+          }
 
           switch (DefaultFormProps[i].hpType) {
             case EHyperparameterParameterType.CHOICE:

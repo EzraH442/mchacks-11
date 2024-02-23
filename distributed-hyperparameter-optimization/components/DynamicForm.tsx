@@ -1,107 +1,129 @@
 import { ControllerRenderProps, useFieldArray, useForm } from 'react-hook-form';
 import AddFormFieldModal, { IAddFormField } from './AddFormFieldModal';
 import { Form, FormControl, FormField, FormItem, FormLabel } from './ui/form';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { X } from 'lucide-react';
-import { DefaultFormProps } from '@/types';
+import { useStore } from '@/store';
+import { observer } from 'mobx-react-lite';
+import { applySnapshot, getSnapshot } from 'mobx-state-tree';
+import { toast } from './ui/use-toast';
+import { EHyperparameterDataType } from '@/types';
 
 interface DynamicFormProps {
   onSubmit: (data: any) => void;
   disabled?: boolean;
 }
 
-const DynamicForm: React.FC<DynamicFormProps> = ({ onSubmit, disabled }) => {
-  const [formFields, setFormFields] =
-    useState<IAddFormField[]>(DefaultFormProps);
+const DynamicForm: React.FC<DynamicFormProps> = observer(
+  ({ onSubmit, disabled }) => {
+    const store = useStore(null);
+    console.log('store', getSnapshot(store));
+    const { hyperparameters, searchSpace } = store;
 
-  const form = useForm<any>({
-    defaultValues: {},
-  });
-
-  useEffect(() => {
-    formFields.forEach((field) => {
-      handleFieldAdded(field);
+    const form = useForm<any>({
+      defaultValues: {},
     });
-  }, []);
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'fields',
-  });
+    const { fields, append, remove } = useFieldArray({
+      control: form.control,
+      name: 'fields',
+    });
 
-  const handleFieldAdded = (data: IAddFormField) => {
-    append(data.fieldName);
-    setFormFields((prev) => [...prev, data]);
-  };
+    const handleFieldAdded = (data: IAddFormField) => {
+      const snapshot = getSnapshot(store);
+      try {
+        store.addHyperparameter(data);
+        append(data);
+      } catch (e) {
+        console.error(e);
+        toast({
+          title: 'error adding field:',
+          description: JSON.stringify(e),
+        });
+        applySnapshot(store, snapshot);
+        remove(fields.length - 1);
+      }
+    };
 
-  const handleFieldRemoved = (index: number) => {
-    remove(index);
-    setFormFields((prev) => prev.filter((_, i) => i !== index));
-  };
+    useEffect(() => {
+      append(hyperparameters.formFields);
+    }, [hyperparameters.formFields, append]);
 
-  const renderField = (
-    field: ControllerRenderProps<any, any>,
-    index: number,
-  ) => {
-    switch (formFields[index].type) {
-      case 'bool':
-        return (
-          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-        );
+    const handleFieldRemoved = (index: number) => {
+      remove(index);
+    };
 
-      case 'text':
-        return <Input {...field}></Input>;
-
-      case 'number':
-        return <Input type="number" {...field}></Input>;
-
-      default:
+    const renderField = (
+      field: ControllerRenderProps<any, any>,
+      index: number,
+    ) => {
+      const type = hyperparameters.formFields.at(index)?.type;
+      if (!type) {
         return null;
-    }
-  };
+      }
 
-  return (
-    <div>
-      <Form {...form}>
-        {fields.length === 0 && (
-          <div className="px-3 border-dashed border-gray-300 border py-2 flex items-center justify-center">
-            <p className="text-center">No fields added</p>
-          </div>
-        )}
-
-        {fields.map((field, index) => {
+      switch (type) {
+        case EHyperparameterDataType.BOOL:
           return (
-            <FormField
-              control={form.control}
-              key={field.id}
-              name={`fields[${index}]`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{formFields[index].fieldName}</FormLabel>
-                  <FormControl>{renderField(field, index)}</FormControl>
-
-                  <button onClick={() => handleFieldRemoved(index)}>
-                    <X />
-                  </button>
-                </FormItem>
-              )}
-            />
+            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
           );
-        })}
-      </Form>
 
-      <div className="my-4" />
+        case EHyperparameterDataType.TEXT:
+          return <Input {...field}></Input>;
 
-      <AddFormFieldModal
-        onSubmit={(data) => {
-          console.log(data);
-          handleFieldAdded(data);
-        }}
-      />
-    </div>
-  );
-};
+        case EHyperparameterDataType.NUMBER:
+          return <Input type="number" {...field}></Input>;
+
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div>
+        <Form {...form}>
+          {fields.length === 0 && (
+            <div className="px-3 border-dashed border-gray-300 border py-2 flex items-center justify-center">
+              <p className="text-center">No fields added</p>
+            </div>
+          )}
+
+          {fields.map((field, index) => {
+            return (
+              <FormField
+                control={form.control}
+                key={field.id}
+                name={`fields[${index}]`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {hyperparameters.formFields.at(index)?.fieldName}
+                    </FormLabel>
+                    <FormControl>{renderField(field, index)}</FormControl>
+
+                    <button onClick={() => handleFieldRemoved(index)}>
+                      <X />
+                    </button>
+                  </FormItem>
+                )}
+              />
+            );
+          })}
+        </Form>
+
+        <div className="my-4" />
+
+        <AddFormFieldModal
+          onSubmit={(data) => {
+            console.log(data);
+            handleFieldAdded(data);
+          }}
+        />
+      </div>
+    );
+  },
+);
 
 export default DynamicForm;
