@@ -27,7 +27,6 @@ interface DynamicFormProps {
 const DynamicForm: React.FC<DynamicFormProps> = observer(
   ({ onSubmit, disabled }) => {
     const store = useStore(null);
-    console.log('store', getSnapshot(store));
     const { hyperparameters, searchSpace } = store;
 
     const form = useForm<any>({
@@ -104,6 +103,12 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
               Add choice
             </Button>
           </div>
+          <Button
+            variant="destructive"
+            onClick={() => handleFieldRemoved(index)}
+          >
+            Remove Field
+          </Button>
         </FormItem>
       );
     };
@@ -143,6 +148,12 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
               Add choice
             </Button>
           </div>
+          <Button
+            variant="destructive"
+            onClick={() => handleFieldRemoved(index)}
+          >
+            Remove Field
+          </Button>
         </FormItem>
       );
     };
@@ -185,6 +196,12 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
               Add choice
             </Button>
           </div>
+          <Button
+            variant="destructive"
+            onClick={() => handleFieldRemoved(index)}
+          >
+            Remove Field
+          </Button>
         </FormItem>
       );
     };
@@ -222,6 +239,12 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
               }}
             />
           </div>
+          <Button
+            variant="destructive"
+            onClick={() => handleFieldRemoved(index)}
+          >
+            Remove Field
+          </Button>
         </FormItem>
       );
     };
@@ -267,6 +290,12 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
               }}
             />
           </div>
+          <Button
+            variant="destructive"
+            onClick={() => handleFieldRemoved(index)}
+          >
+            Remove Field
+          </Button>
         </FormItem>
       );
     };
