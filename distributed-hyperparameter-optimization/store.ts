@@ -33,20 +33,77 @@ export const AddFormField = types.model('AddFormField', {
   array: false,
 });
 
-export const SearchSpaceNumberChoice = types.model('SearchSpaceNumberChoice', {
-  fieldName: types.string,
-  choices: types.array(types.number),
-});
+export const SearchSpaceNumberChoice = types
+  .model('SearchSpaceNumberChoice', {
+    fieldName: types.string,
+    choices: types.array(types.number),
+  })
+  .actions((self) => ({
+    addChoice: (choice: number) => {
+      self.choices.push(choice);
+    },
+    removeIndex: (index: number) => {
+      if (index < self.choices.length) self.choices.splice(index, 1);
+    },
+    removeChoice: (choice: number) => {
+      const i = self.choices.findIndex((f) => f === choice);
 
-export const SearchSpaceBoolChoice = types.model('SearchSpaceBoolChoice', {
-  fieldName: types.string,
-  choices: types.array(types.boolean),
-});
+      if (i !== -1) self.choices.splice(i, 1);
+    },
+    updateChoice: (index: number, choice: number) => {
+      if (index < self.choices.length) self.choices[index] = choice;
+    },
+  }));
 
-export const SearchSpaceStringChoice = types.model('SearchSpaceStringChoice', {
-  fieldName: types.string,
-  choices: types.array(types.string),
-});
+export type ISearchSpaceNumberChoice = Instance<typeof SearchSpaceNumberChoice>;
+
+export const SearchSpaceBoolChoice = types
+  .model('SearchSpaceBoolChoice', {
+    fieldName: types.string,
+    choices: types.array(types.boolean),
+  })
+  .actions((self) => ({
+    addChoice: (choice: boolean) => {
+      self.choices.push(choice);
+    },
+    removeIndex: (index: number) => {
+      if (index < self.choices.length) self.choices.splice(index, 1);
+    },
+    removeChoice: (choice: boolean) => {
+      const i = self.choices.findIndex((f) => f === choice);
+
+      if (i !== -1) self.choices.splice(i, 1);
+    },
+    updateChoice: (index: number, choice: boolean) => {
+      if (index < self.choices.length) self.choices[index] = choice;
+    },
+  }));
+
+export type ISearchSpaceBoolChoice = Instance<typeof SearchSpaceBoolChoice>;
+
+export const SearchSpaceStringChoice = types
+  .model('SearchSpaceStringChoice', {
+    fieldName: types.string,
+    choices: types.array(types.string),
+  })
+  .actions((self) => ({
+    addChoice: (choice: string) => {
+      self.choices.push(choice);
+    },
+    removeIndex: (index: number) => {
+      if (index < self.choices.length) self.choices.splice(index, 1);
+    },
+    removeChoice: (choice: string) => {
+      const i = self.choices.findIndex((f) => f === choice);
+
+      if (i !== -1) self.choices.splice(i, 1);
+    },
+    updateChoice: (index: number, choice: string) => {
+      if (index < self.choices.length) self.choices[index] = choice;
+    },
+  }));
+
+export type ISearchSpaceStringChoice = Instance<typeof SearchSpaceStringChoice>;
 
 export const SearchSpaceFallbackChoice = types.model(
   'SearchSpaceFallbackChoice',
@@ -56,18 +113,47 @@ export const SearchSpaceFallbackChoice = types.model(
   },
 );
 
-export const SearchSpaceUniform = types.model('SearchSpaceUniform', {
-  fieldName: types.string,
-  min: types.number,
-  max: types.number,
-});
+export type ISearchSpaceFallbackChoice = Instance<
+  typeof SearchSpaceFallbackChoice
+>;
 
-export const SearchSpaceQUniform = types.model('SearchSpaceQUniform', {
-  fieldName: types.string,
-  min: types.number,
-  max: types.number,
-  q: types.number,
-});
+export const SearchSpaceUniform = types
+  .model('SearchSpaceUniform', {
+    fieldName: types.string,
+    min: types.number,
+    max: types.number,
+  })
+  .actions((self) => ({
+    setMin: (min: number) => {
+      self.min = min;
+    },
+    setMax: (max: number) => {
+      self.max = max;
+    },
+  }));
+
+export type ISearchSpaceUniform = Instance<typeof SearchSpaceUniform>;
+
+export const SearchSpaceQUniform = types
+  .model('SearchSpaceQUniform', {
+    fieldName: types.string,
+    min: types.number,
+    max: types.number,
+    q: types.number,
+  })
+  .actions((self) => ({
+    setMin: (min: number) => {
+      self.min = min;
+    },
+    setMax: (max: number) => {
+      self.max = max;
+    },
+    setQ: (q: number) => {
+      self.q = q;
+    },
+  }));
+
+export type ISearchSpaceQUniform = Instance<typeof SearchSpaceQUniform>;
 
 export const SearchSpaceOption = types.union(
   SearchSpaceNumberChoice,
