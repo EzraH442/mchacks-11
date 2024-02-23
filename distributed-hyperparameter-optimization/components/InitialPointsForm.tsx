@@ -5,6 +5,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import DynamicForm from './DynamicForm';
 
 export const formSchema = z.object({
   layers: z.number({
@@ -85,104 +86,12 @@ const InitialPointsForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
 
   return (
     <div>
-      <Form {...form}>
-        <FormField
-          control={form.control}
-          name="layers"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Layers</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {fields.map((field, i) => (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name={`neuronsPerLayer.${i}`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Neurons in layer {i + 1}</FormLabel>
-                <Input {...field} type="number" />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ))}
-        <FormField
-          control={form.control}
-          name="epsilonMin"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Epsilon min</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="epsilonMax"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Epsilon max</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="epsilonStep"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Epsilon step</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="learningRateMin"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Learning rate min</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="learningRateMax"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Learning rate max</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="learningRateStep"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Learning rate step</FormLabel>
-              <Input {...field} type="number" />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="my-4" />
+      <DynamicForm onSubmit={onSubmit} disabled={disabled} />
 
-        <Button disabled={disabled} onClick={form.handleSubmit(onSubmit)}>
-          Add Parameters
-        </Button>
-      </Form>
+      <div className="mt-6 mb-2 border border-gray-300"></div>
+      <Button disabled={disabled} onClick={form.handleSubmit(onSubmit)}>
+        Add Parameters
+      </Button>
     </div>
   );
 };
