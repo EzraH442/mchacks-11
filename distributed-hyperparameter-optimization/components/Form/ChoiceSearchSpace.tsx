@@ -4,7 +4,7 @@ import { FormItem, FormLabel } from '../ui/form';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { X } from 'lucide-react';
-import { EHyperparameterDataType, EHyperparameterParameterType } from '@/types';
+import { EHyperparameterDataType } from '@/types';
 import { Checkbox } from '../ui/checkbox';
 import { observer } from 'mobx-react-lite';
 
@@ -55,15 +55,7 @@ const InputBoolChoice = (props: { choice: IChoice }) => {
 };
 
 const ChoiceSearchSpace = observer(
-  ({
-    field,
-    index,
-    type,
-  }: {
-    field: ControllerRenderProps<any, any>;
-    index: number;
-    type: EHyperparameterDataType;
-  }) => {
+  ({ index, type }: { index: number; type: EHyperparameterDataType }) => {
     const store = useStore(null);
     const { searchSpace, hyperparameters } = store;
     const options = searchSpace.options.at(index) as ISearchSpaceChoice;
