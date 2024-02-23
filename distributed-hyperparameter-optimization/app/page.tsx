@@ -155,7 +155,7 @@ function App() {
           <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
             <Card className="">
               <CardHeader>
-                <CardTitle>Initial Point to Evaluate</CardTitle>
+                <CardTitle>Search Space</CardTitle>
               </CardHeader>
               <CardContent>
                 <InitialPointsForm
@@ -176,7 +176,7 @@ function App() {
             </Card>
             <Card className="">
               <CardHeader>
-                <CardTitle>Search Space</CardTitle>
+                <CardTitle>Initial point to evaluate</CardTitle>
               </CardHeader>
               <CardContent>
                 <SearchSpaceForm

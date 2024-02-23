@@ -18,15 +18,22 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useForm } from 'react-hook-form';
-import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
-import { SelectValue } from '@radix-ui/react-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { Checkbox } from './ui/checkbox';
 
-enum HyperparameterParameterType {
+export enum HyperparameterParameterType {
   UNIFORM = 'uniform',
   CHOICE = 'choice',
+  QUNIFORM = 'quniform',
 }
 
-enum HyperparameterDataType {
+export enum HyperparameterDataType {
   BOOL = 'bool',
   NUMBER = 'number',
   TEXT = 'text',
@@ -88,6 +95,25 @@ const AddFormFieldModal: React.FC<AddFormFieldModalProps> = ({ onSubmit }) => {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="array"
+            render={({ field }) => (
+              <FormItem className="flex items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="leading-none">
+                  <FormLabel>Array type?</FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="hpType"
@@ -104,17 +130,21 @@ const AddFormFieldModal: React.FC<AddFormFieldModalProps> = ({ onSubmit }) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value={HyperparameterParameterType.CHOICE}>
+                      Choice
+                    </SelectItem>
                     <SelectItem value={HyperparameterParameterType.UNIFORM}>
                       Uniform
                     </SelectItem>
-                    <SelectItem value={HyperparameterParameterType.CHOICE}>
-                      Choice
+                    <SelectItem value={HyperparameterParameterType.QUNIFORM}>
+                      Quniform
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="type"
