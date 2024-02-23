@@ -1,46 +1,38 @@
-import { ISearchSpaceUniform, useStore } from '@/store';
+import { useStore } from '@/store';
 import { FormItem, FormLabel } from '../ui/form';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { observer } from 'mobx-react-lite';
+import { IUniform } from '@/models/StagingArea';
 
-const UniformSearchSpace = observer(({ index }: { index: number }) => {
-  const store = useStore(null);
-  const { searchSpace, hyperparameters } = store;
-  const options = searchSpace.options.at(index) as ISearchSpaceUniform;
-
-  if (!options) {
-    return <p>error rendering D</p>;
-  }
-
-  const handleFieldRemoved = (index: number) => {
-    store.removeHyperparameterIndex(index);
-  };
+const UniformSearchSpace = observer(({ name }: { name: string }) => {
+  const { stagingArea } = useStore(null);
+  const hp = stagingArea.hyperparameters.get(name);
+  const ss = hp?.searchSpace as IUniform;
 
   return (
     <FormItem>
-      <FormLabel>{hyperparameters.formFields.at(index)?.fieldName}</FormLabel>
+      <FormLabel>{name}</FormLabel>
       <div>
         <p>min:</p>
         <Input
           type="number"
           step="any"
-          value={options.min}
-          onChange={(e) => {
-            options.setMin(e.target.valueAsNumber);
-          }}
+          value={ss.min}
+          onChange={(e) => ss.setMin(e.target.valueAsNumber)}
         />
         <p>max:</p>
         <Input
           type="number"
           step="any"
-          value={options.max}
-          onChange={(e) => {
-            options.setMax(e.target.valueAsNumber);
-          }}
+          value={ss.max}
+          onChange={(e) => ss.setMax(e.target.valueAsNumber)}
         />
       </div>
-      <Button variant="destructive" onClick={() => handleFieldRemoved(index)}>
+      <Button
+        variant="destructive"
+        onClick={() => stagingArea.removeHyperparameter(name)}
+      >
         Remove Field
       </Button>
     </FormItem>

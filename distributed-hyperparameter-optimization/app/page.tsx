@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { Github } from 'lucide-react';
 import { useStore } from '@/store';
 import { getSnapshot } from 'mobx-state-tree';
+import { get } from 'http';
 
 export interface HyperparameterData {
   layers: number;
@@ -32,6 +33,7 @@ export interface HyperparameterData {
 
 function App() {
   const store = useStore(null);
+  console.log('store', getSnapshot(store));
 
   const [results, setResults] = useState<Record<string, number>>({});
   const [totalResults, setTotalResults] = useState(0);

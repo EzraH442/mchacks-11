@@ -1,4 +1,4 @@
-import { IChoice, ISearchSpaceChoice, useStore } from '@/store';
+import { useStore } from '@/store';
 import { ControllerRenderProps } from 'react-hook-form';
 import { FormItem, FormLabel } from '../ui/form';
 import { Input } from '../ui/input';
@@ -8,6 +8,8 @@ import { EHyperparameterDataType } from '@/types';
 import { Checkbox } from '../ui/checkbox';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
+import { Hyperparameter, IOption, IOptions } from '@/models/StagingArea';
+import { v4 } from 'uuid';
 
 const determineDefaultChoiceValue = (type: EHyperparameterDataType) => {
   switch (type) {
@@ -21,65 +23,60 @@ const determineDefaultChoiceValue = (type: EHyperparameterDataType) => {
 };
 
 interface IInputChoiceProps {
-  choice: IChoice;
+  option: IOption;
 }
 
-const InputNumberChoice: React.FC<IInputChoiceProps> = ({ choice }) => {
-  return (
-    <Input
-      type="number"
-      step="any"
-      defaultValue={choice.value}
-      onChange={(e) => {
-        choice.setValue(e.target.valueAsNumber);
-      }}
-    />
-  );
-};
+const InputNumberChoice: React.FC<IInputChoiceProps> = observer(
+  ({ option }) => {
+    return (
+      <Input
+        type="number"
+        step="any"
+        defaultValue={option.value}
+        onChange={(e) => {
+          option.setValue(e.target.valueAsNumber);
+        }}
+      />
+    );
+  },
+);
 
-const InputStringChoice: React.FC<IInputChoiceProps> = ({ choice }) => {
-  return (
-    <Input
-      type="text"
-      defaultValue={choice.value}
-      onChange={(e) => {
-        console.log('shit', e.target.value);
-        choice.setValue(e.target.value);
-      }}
-    />
-  );
-};
+const InputStringChoice: React.FC<IInputChoiceProps> = observer(
+  ({ option }) => {
+    return (
+      <Input
+        type="text"
+        defaultValue={option.value}
+        onChange={(e) => {
+          option.setValue(e.target.value);
+        }}
+      />
+    );
+  },
+);
 
-const InputBoolChoice: React.FC<IInputChoiceProps> = ({ choice }) => {
+const InputBoolChoice: React.FC<IInputChoiceProps> = observer(({ option }) => {
   return (
     <Checkbox
-      defaultChecked={choice.value}
+      defaultChecked={option.value}
       onCheckedChange={(e) => {
-        choice.setValue(e === true ? true : false);
+        // option.setValue();
       }}
     />
   );
-};
+});
 
 interface IChoiceSearchSpaceProps {
-  index: number;
+  name: string;
   type: EHyperparameterDataType;
   array?: boolean;
 }
 
 const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
-  ({ index, type, array }) => {
-    const store = useStore(null);
-    const { searchSpace, hyperparameters } = store;
-    const options = searchSpace.options.at(index) as ISearchSpaceChoice;
-
-    if (!options) {
-      return <p>error rendering A</p>;
-    }
-
-    const handleFieldRemoved = (index: number) => {
-      store.removeHyperparameterIndex(index);
-    };
+  ({ name, type }) => {
+    const { stagingArea } = useStore(null);
+    const hp = stagingArea.hyperparameters.get(name);
+    const ss = hp?.searchSpace as IOptions;
 
     const getDivStyle = () => {
       if (
@@ -92,28 +89,33 @@ const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
       }
     };
 
-    const getInputElement = (index: number, choice: IChoice) => {
+    const getInputElement = (option: IOption) => {
       switch (type) {
         case EHyperparameterDataType.NUMBER:
-          return <InputNumberChoice choice={choice} key={choice.key} />;
+          return <InputNumberChoice option={option} />;
         case EHyperparameterDataType.TEXT:
-          return <InputStringChoice choice={choice} key={choice.key} />;
+          return <InputStringChoice option={option} />;
         case EHyperparameterDataType.BOOL:
-          return <InputBoolChoice choice={choice} key={choice.key} />;
+          return <InputBoolChoice option={option} />;
       }
     };
 
+    const keys = Array.from(ss.optionMap.keys());
+
     return (
       <FormItem>
-        <FormLabel>{hyperparameters.formFields.at(index)?.fieldName}</FormLabel>
+        <FormLabel>{hp?.name}</FormLabel>
         <div>
-          {options.choices.map((choice, i) => {
+          {keys.map((id, i) => {
+            const option = ss.optionMap.get(id);
+            if (!option) {
+              console.error('option not found', id);
+              return <></>;
+            }
             return (
-              <div key={choice.key} className={getDivStyle()}>
-                {getInputElement(i, choice)}
-                <button
-                  onClick={() => store.removeHyperparameterChoice(index, i)}
-                >
+              <div key={id} className={getDivStyle()}>
+                {getInputElement(option)}
+                <button onClick={() => ss.removeOption(id)}>
                   <X size={16} />
                 </button>
               </div>
@@ -121,12 +123,17 @@ const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
           })}
           <Button
             variant="secondary"
-            onClick={() => options.addChoice(determineDefaultChoiceValue(type))}
+            onClick={() =>
+              ss.addOption(v4(), determineDefaultChoiceValue(type))
+            }
           >
             Add choice
           </Button>
         </div>
-        <Button variant="destructive" onClick={() => handleFieldRemoved(index)}>
+        <Button
+          variant="destructive"
+          onClick={() => stagingArea.removeHyperparameter(name)}
+        >
           Remove Field
         </Button>
       </FormItem>

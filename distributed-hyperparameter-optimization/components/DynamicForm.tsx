@@ -6,10 +6,11 @@ import { useStore } from '@/store';
 import { observer } from 'mobx-react-lite';
 import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import { toast } from './ui/use-toast';
-import { EHyperparameterDataType, EHyperparameterParameterType } from '@/types';
+import { EHyperparameterParameterType } from '@/types';
 import ChoiceSearchSpace from './Form/ChoiceSearchSpace';
 import UniformSearchSpace from './Form/UniformSearchSpace';
 import QUniformSearchSpace from './Form/QUniformSearchSpace';
+import { Options, QUniform, Uniform } from '@/models/StagingArea';
 
 interface DynamicFormProps {
   onSubmit: (data: any) => void;
@@ -18,8 +19,7 @@ interface DynamicFormProps {
 
 const DynamicForm: React.FC<DynamicFormProps> = observer(
   ({ onSubmit, disabled }) => {
-    const store = useStore(null);
-    const { hyperparameters } = store;
+    const { stagingArea } = useStore(null);
 
     const form = useForm<any>({
       defaultValues: {
@@ -27,69 +27,89 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
       },
     });
 
-    const { fields, append, remove } = useFieldArray({
-      control: form.control,
-      name: 'fields',
-    });
-
-    useEffect(() => {
-      append(hyperparameters.formFields);
-    }, []);
-
     const handleFieldAdded = (data: IAddFormField) => {
-      const snapshot = getSnapshot(store);
+      const snapshot = getSnapshot(stagingArea);
       try {
-        store.addHyperparameter(data);
-        append(data);
+        let searchSpace;
+        switch (data.hpType) {
+          case EHyperparameterParameterType.CHOICE:
+            searchSpace = Options.create({
+              type: 'options',
+              optionMap: {},
+              selectedValue: '',
+            });
+            break;
+
+          case EHyperparameterParameterType.UNIFORM:
+            searchSpace = Uniform.create({
+              type: 'uniform',
+              min: 0,
+              max: 1,
+              selectedValue: 0.01,
+            });
+            break;
+
+          case EHyperparameterParameterType.QUNIFORM:
+            searchSpace = QUniform.create({
+              type: 'quniform',
+              min: 0,
+              max: 10,
+              q: 5,
+              selectedValue: 5,
+            });
+            break;
+        }
+
+        stagingArea.addHyperparameter({
+          name: data.fieldName,
+          dataType: data.type,
+          parameterType: data.hpType,
+          searchSpace: searchSpace,
+        });
       } catch (e) {
         console.error(e);
         toast({
           title: 'error adding field:',
           description: JSON.stringify(e),
         });
-        applySnapshot(store, snapshot);
-        remove(fields.length - 1);
+        applySnapshot(stagingArea, snapshot);
       }
     };
 
+    const keys = Array.from(stagingArea.hyperparameters.keys());
     return (
       <div>
         <Form {...form}>
-          {fields.length === 0 && (
+          {keys.length === 0 && (
             <div className="px-3 border-dashed border-gray-300 border py-2 flex items-center justify-center">
               <p className="text-center">No fields added</p>
             </div>
           )}
 
-          {hyperparameters.formFields.map((field, index) => {
-            if (!fields[index]) return <></>;
-
+          {keys.map((fieldName, index) => {
             return (
               <FormField
                 control={form.control}
-                key={fields[index].id}
+                key={fieldName}
                 name={`fields[${index}]`}
                 render={({ field }) => {
-                  const associatedField = hyperparameters.formFields.at(index);
+                  const param = stagingArea.hyperparameters.get(fieldName);
 
-                  if (!associatedField) {
-                    console.log('no associated field for index', index);
-                    return <></>;
-                  }
+                  if (!param) return <></>;
 
-                  switch (associatedField.hpType) {
+                  switch (param?.parameterType) {
                     case EHyperparameterParameterType.CHOICE:
                       return (
                         <ChoiceSearchSpace
-                          index={index}
-                          type={associatedField.type}
-                          array={associatedField.array}
+                          name={param.name}
+                          type={param.dataType}
+                          array={param.array}
                         />
                       );
                     case EHyperparameterParameterType.UNIFORM:
-                      return <UniformSearchSpace index={index} />;
+                      return <UniformSearchSpace name={fieldName} />;
                     case EHyperparameterParameterType.QUNIFORM:
-                      return <QUniformSearchSpace index={index} />;
+                      return <QUniformSearchSpace name={fieldName} />;
                   }
                 }}
               />
@@ -101,7 +121,6 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
 
         <AddFormFieldModal
           onSubmit={(data) => {
-            console.log(data);
             handleFieldAdded(data);
           }}
         />

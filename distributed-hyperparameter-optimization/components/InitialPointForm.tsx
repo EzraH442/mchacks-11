@@ -5,7 +5,7 @@ import { ControllerRenderProps, useFieldArray, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { IChoice, ISearchSpaceChoice, useStore } from '@/store';
+import { useStore } from '@/store';
 import { observer } from 'mobx-react-lite';
 import {
   Select,
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { getSnapshot } from 'mobx-state-tree';
+import { IOptions, IQUniform, IUniform } from '@/models/StagingArea';
 
 export const formSchema = z.object({
   layers: z.number({
@@ -60,19 +61,11 @@ interface HypFormProps {
 
 const InitialPointsForm: React.FC<HypFormProps> = observer(
   ({ onSubmit, disabled }) => {
-    const store = useStore(null);
-    const { hyperparameters, searchSpace, initialPoint } = store;
-    console.log(getSnapshot(store));
+    const { stagingArea } = useStore(null);
 
     const form = useForm<any>({
       defaultValues: {
-        x: initialPoint.choices.map((choice, index) => {
-          if (hyperparameters.formFields.at(index)?.hpType === 'choice') {
-            return choice.value.key;
-          } else {
-            return choice.value;
-          }
-        }),
+        x: [],
       },
     });
 
@@ -81,34 +74,39 @@ const InitialPointsForm: React.FC<HypFormProps> = observer(
       name: 'x',
     });
 
-    useEffect(() => {
-      append(hyperparameters.formFields);
-    }, []);
+    const keys = Array.from(stagingArea.hyperparameters.keys());
 
-    const renderOptionPoint = (
-      field: ControllerRenderProps<any, any>,
-      index: number,
-    ) => {
-      const associatedField = hyperparameters.formFields.at(index);
-      const options = searchSpace.options.at(index) as ISearchSpaceChoice;
-
-      if (!associatedField || options?.choices === undefined) {
-        console.log('no associated field for index', index);
-        return <></>;
+    const formatValues = (values: any) => {
+      if (values === undefined) {
+        return 'Select an option';
       }
+      if (typeof values === 'boolean') {
+        return values ? 'true' : 'false';
+      }
+      if (typeof values === 'object') {
+        return JSON.stringify(values);
+      }
+      return values;
+    };
 
+    const renderOptionPoint = (parameterName: string) => {
+      const ss = stagingArea.hyperparameters.get(parameterName)
+        ?.searchSpace as IOptions;
       return (
         <FormItem>
-          <FormLabel>{associatedField.fieldName}</FormLabel>
-          <Select onValueChange={field.onChange}>
+          <FormLabel>{parameterName}</FormLabel>
+          <Select
+            value={ss.selectedValue ?? ''}
+            onValueChange={(v) => ss.setSelectedValue(v)}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Select an option"></SelectValue>
+              {formatValues(ss.optionMap.get(ss.selectedValue)?.value)}
             </SelectTrigger>
             <SelectContent>
-              {...options.choices?.map((option: IChoice, index) => {
+              {Array.from(ss.optionMap.entries()).map(([k, v]) => {
                 return (
-                  <SelectItem key={index} value={option.key}>
-                    {option.value}
+                  <SelectItem key={k} value={v.id}>
+                    {formatValues(v.value)}
                   </SelectItem>
                 );
               })}
@@ -118,21 +116,18 @@ const InitialPointsForm: React.FC<HypFormProps> = observer(
       );
     };
 
-    const renderNumberPoint = (
-      field: ControllerRenderProps<any, any>,
-      index: number,
-    ) => {
-      const associatedField = hyperparameters.formFields.at(index);
-
-      if (!associatedField) {
-        console.log('no associated field for index', index);
-        return <></>;
-      }
+    const renderNumberPoint = (parameterName: string) => {
+      const ss = stagingArea.hyperparameters.get(parameterName)
+        ?.searchSpace as IUniform;
 
       return (
         <FormItem>
-          <FormLabel>{associatedField.fieldName}</FormLabel>
-          <Input type="number" {...field} />
+          <FormLabel>{parameterName}</FormLabel>
+          <Input
+            type="number"
+            defaultValue={ss?.selectedValue}
+            onChange={(e) => ss?.setUniformValue(e.target.valueAsNumber)}
+          />
         </FormItem>
       );
     };
@@ -140,31 +135,22 @@ const InitialPointsForm: React.FC<HypFormProps> = observer(
     return (
       <div>
         <Form {...form}>
-          {hyperparameters.formFields.map((field, index) => {
-            if (!fields[index]) {
-              return <></>;
-            }
-
+          {keys.map((name, index) => {
             return (
               <FormField
-                key={fields[index].id}
+                key={name}
                 control={form.control}
                 name={`x[${index}]`}
                 render={({ field }) => {
-                  const associatedField = hyperparameters.formFields.at(index);
+                  const entry = stagingArea.hyperparameters.get(name);
 
-                  if (!associatedField) {
-                    console.log('no associated field for index', index);
-                    return <></>;
-                  }
-
-                  switch (associatedField.hpType) {
+                  switch (entry?.parameterType) {
                     case 'choice':
-                      return renderOptionPoint(field, index);
+                      return renderOptionPoint(name);
                     case 'uniform':
-                      return renderNumberPoint(field, index);
+                      return renderNumberPoint(name);
                     case 'quniform':
-                      return renderNumberPoint(field, index);
+                      return renderNumberPoint(name);
                     default:
                       return <></>;
                   }

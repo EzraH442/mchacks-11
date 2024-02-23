@@ -1,52 +1,42 @@
-import { ISearchSpaceQUniform, useStore } from '@/store';
+import { useStore } from '@/store';
 import { FormItem, FormLabel } from '../ui/form';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { observer } from 'mobx-react-lite';
+import { IQUniform, IUniform } from '@/models/StagingArea';
 
-const QUniformSearchSpace = observer(({ index }: { index: number }) => {
-  const store = useStore(null);
-  const { hyperparameters, searchSpace } = store;
-  const options = searchSpace.options.at(index) as ISearchSpaceQUniform;
-
-  if (!options) {
-    return <p>error rendering E</p>;
-  }
-
-  const handleFieldRemoved = (index: number) => {
-    store.removeHyperparameterIndex(index);
-  };
+const QUniformSearchSpace = observer(({ name }: { name: string }) => {
+  const { stagingArea } = useStore(null);
+  const hp = stagingArea.hyperparameters.get(name);
+  const ss = hp?.searchSpace as IQUniform;
 
   return (
     <FormItem>
-      <FormLabel>{hyperparameters.formFields.at(index)?.fieldName}</FormLabel>
+      <FormLabel>{name}</FormLabel>
       <div>
         <p>min:</p>
         <Input
           type="number"
-          value={options.min}
-          onChange={(e) => {
-            options.setMin(e.target.valueAsNumber);
-          }}
+          value={ss.min}
+          onChange={(e) => ss.setMin(e.target.valueAsNumber)}
         />
         <p>max:</p>
         <Input
           type="number"
-          value={options.max}
-          onChange={(e) => {
-            options.setMax(e.target.valueAsNumber);
-          }}
+          value={ss.max}
+          onChange={(e) => ss.setMax(e.target.valueAsNumber)}
         />
         <p>q</p>
         <Input
           type="number"
-          value={options.q}
-          onChange={(e) => {
-            options.setQ(e.target.valueAsNumber);
-          }}
+          value={ss.q}
+          onChange={(e) => ss.setQ(e.target.valueAsNumber)}
         />
       </div>
-      <Button variant="destructive" onClick={() => handleFieldRemoved(index)}>
+      <Button
+        variant="destructive"
+        onClick={() => stagingArea.removeHyperparameter(name)}
+      >
         Remove Field
       </Button>
     </FormItem>
