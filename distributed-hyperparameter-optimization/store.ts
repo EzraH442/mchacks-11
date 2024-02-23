@@ -5,14 +5,17 @@ import {
   SnapshotIn,
   SnapshotOut,
   applySnapshot,
+  getParent,
 } from 'mobx-state-tree';
 import {
   DefaultFormProps,
+  DefaultInitialPoint,
   DefaultSearchSpace,
   EHyperparameterDataType,
   EHyperparameterParameterType,
   IAddFormField,
 } from './types';
+import { v4 } from 'uuid';
 
 let store: IStore | undefined;
 
@@ -33,89 +36,45 @@ export const AddFormField = types.model('AddFormField', {
   array: false,
 });
 
-export const SearchSpaceNumberChoice = types
+export const Choice = types
+  .model('Choice', {
+    key: types.string,
+    value: types.frozen(),
+  })
+  .actions((self) => ({
+    setValue(value: any) {
+      self.value = value;
+    },
+  }));
+
+export type IChoice = Instance<typeof Choice>;
+
+export const SearchSpaceChoice = types
   .model('SearchSpaceNumberChoice', {
     fieldName: types.string,
-    choices: types.array(types.number),
+    choices: types.array(Choice),
   })
   .actions((self) => ({
-    addChoice: (choice: number) => {
-      self.choices.push(choice);
+    addChoice: (choice: any) => {
+      self.choices.push({
+        key: v4(),
+        value: choice,
+      });
     },
     removeIndex: (index: number) => {
       if (index < self.choices.length) self.choices.splice(index, 1);
     },
-    removeChoice: (choice: number) => {
-      const i = self.choices.findIndex((f) => f === choice);
+    removeChoice: (choiceKey: any) => {
+      const i = self.choices.findIndex((f) => f.key === choiceKey);
 
       if (i !== -1) self.choices.splice(i, 1);
     },
-    updateChoice: (index: number, choice: number) => {
-      if (index < self.choices.length) self.choices[index] = choice;
+    updateChoice: (index: number, choice: any) => {
+      if (index < self.choices.length) self.choices[index].value = choice;
     },
   }));
 
-export type ISearchSpaceNumberChoice = Instance<typeof SearchSpaceNumberChoice>;
-
-export const SearchSpaceBoolChoice = types
-  .model('SearchSpaceBoolChoice', {
-    fieldName: types.string,
-    choices: types.array(types.boolean),
-  })
-  .actions((self) => ({
-    addChoice: (choice: boolean) => {
-      self.choices.push(choice);
-    },
-    removeIndex: (index: number) => {
-      if (index < self.choices.length) self.choices.splice(index, 1);
-    },
-    removeChoice: (choice: boolean) => {
-      const i = self.choices.findIndex((f) => f === choice);
-
-      if (i !== -1) self.choices.splice(i, 1);
-    },
-    updateChoice: (index: number, choice: boolean) => {
-      if (index < self.choices.length) self.choices[index] = choice;
-    },
-  }));
-
-export type ISearchSpaceBoolChoice = Instance<typeof SearchSpaceBoolChoice>;
-
-export const SearchSpaceStringChoice = types
-  .model('SearchSpaceStringChoice', {
-    fieldName: types.string,
-    choices: types.array(types.string),
-  })
-  .actions((self) => ({
-    addChoice: (choice: string) => {
-      self.choices.push(choice);
-    },
-    removeIndex: (index: number) => {
-      if (index < self.choices.length) self.choices.splice(index, 1);
-    },
-    removeChoice: (choice: string) => {
-      const i = self.choices.findIndex((f) => f === choice);
-
-      if (i !== -1) self.choices.splice(i, 1);
-    },
-    updateChoice: (index: number, choice: string) => {
-      if (index < self.choices.length) self.choices[index] = choice;
-    },
-  }));
-
-export type ISearchSpaceStringChoice = Instance<typeof SearchSpaceStringChoice>;
-
-export const SearchSpaceFallbackChoice = types.model(
-  'SearchSpaceFallbackChoice',
-  {
-    fieldName: types.string,
-    choices: types.array(types.frozen()),
-  },
-);
-
-export type ISearchSpaceFallbackChoice = Instance<
-  typeof SearchSpaceFallbackChoice
->;
+export type ISearchSpaceChoice = Instance<typeof SearchSpaceChoice>;
 
 export const SearchSpaceUniform = types
   .model('SearchSpaceUniform', {
@@ -156,10 +115,7 @@ export const SearchSpaceQUniform = types
 export type ISearchSpaceQUniform = Instance<typeof SearchSpaceQUniform>;
 
 export const SearchSpaceOption = types.union(
-  SearchSpaceNumberChoice,
-  SearchSpaceBoolChoice,
-  SearchSpaceStringChoice,
-  SearchSpaceFallbackChoice,
+  SearchSpaceChoice,
   SearchSpaceUniform,
   SearchSpaceQUniform,
 );
@@ -177,6 +133,9 @@ export const SearchSpace = types
 
       if (i !== -1) self.options.splice(i, 1);
     },
+    removeIndex: (index: number) => {
+      if (index < self.options.length) self.options.splice(index, 1);
+    },
   }));
 
 export type ISearchSpace = Instance<typeof SearchSpace>;
@@ -189,6 +148,9 @@ export const Hyperparameters = types
     addFormField: (field: IAddFormField) => {
       self.formFields.push(field);
     },
+    removeIndex: (index: number) => {
+      if (index < self.formFields.length) self.formFields.splice(index, 1);
+    },
     removeFormField: (fieldName: string) => {
       const i = self.formFields.findIndex((f) => f.fieldName === fieldName);
 
@@ -198,10 +160,48 @@ export const Hyperparameters = types
 
 export type IHyperparameters = Instance<typeof Hyperparameters>;
 
+export const InitialPointField = types.model('InitialPoint', {
+  fieldName: types.string,
+  value: types.frozen(),
+});
+
+export type IInitialPointField = Instance<typeof InitialPointField>;
+
+export const InitialPoint = types
+  .model('InitialPoint', {
+    choices: types.array(InitialPointField),
+  })
+  .actions((self) => ({
+    push: (field: IInitialPointField) => {
+      self.choices.push(field);
+    },
+    remove: (fieldName: string) => {
+      const removeIndex = self.choices.findIndex(
+        (f) => f.fieldName === fieldName,
+      );
+
+      if (removeIndex !== -1) self.choices.splice(removeIndex, 1);
+    },
+    removeIndex: (index: number) => {
+      if (index < self.choices.length) self.choices.splice(index, 1);
+    },
+    set: (fieldName: string, value: any) => {
+      const i = self.choices.findIndex((f) => f.fieldName === fieldName);
+
+      if (i !== -1) self.choices[i].value = value;
+    },
+    setIndex: (index: number, value: any) => {
+      if (index < self.choices.length) self.choices[index].value = value;
+    },
+  }));
+
+export type IInitialPoint = Instance<typeof InitialPoint>;
+
 const Store = types
   .model('Store', {
     hyperparameters: Hyperparameters,
     searchSpace: SearchSpace,
+    initialPoint: InitialPoint,
   })
   .actions((self) => ({
     addHyperparameter: (field: IAddFormField) => {
@@ -213,12 +213,20 @@ const Store = types
             fieldName: field.fieldName,
             choices: [0],
           });
+          self.initialPoint.push({
+            fieldName: field.fieldName,
+            value: 0,
+          });
           break;
         case EHyperparameterParameterType.UNIFORM:
           self.searchSpace.addChoice({
             fieldName: field.fieldName,
             min: 0,
             max: 1,
+          });
+          self.initialPoint.push({
+            fieldName: field.fieldName,
+            value: 0.5,
           });
           break;
         case EHyperparameterParameterType.QUNIFORM:
@@ -228,12 +236,39 @@ const Store = types
             max: 10,
             q: 1,
           });
+          self.initialPoint.push({
+            fieldName: field.fieldName,
+            value: 5,
+          });
           break;
       }
     },
     removeHyperparameter: (fieldName: string) => {
       self.hyperparameters.removeFormField(fieldName);
       self.searchSpace.removeChoice(fieldName);
+      self.initialPoint.remove(fieldName);
+    },
+    removeHyperparameterIndex: (i: number) => {
+      if (i < self.hyperparameters.formFields.length) {
+        self.hyperparameters.removeIndex(i);
+        self.searchSpace.removeIndex(i);
+        self.initialPoint.removeIndex(i);
+      }
+    },
+    removeHyperparameterChoice: (i: number, choiceIndex: number) => {
+      if (i < self.searchSpace.options.length) {
+        const choice = self.searchSpace.options.at(i) as ISearchSpaceChoice;
+        const selectedValue = self.initialPoint.choices.at(i);
+
+        if (
+          selectedValue &&
+          selectedValue.value === choice.choices.at(choiceIndex)?.key
+        ) {
+          selectedValue.value = choice.choices.at(0)?.key ?? 'null';
+        }
+
+        choice.removeIndex(choiceIndex);
+      }
     },
   }));
 
@@ -261,30 +296,39 @@ export function initializeStore(snapshot = null) {
             console.log('creating array choice', s.fieldName, s.options);
             return {
               fieldName: s.fieldName,
-              choices: s.options,
+              choices: s.options?.map((o) => {
+                return {
+                  key: v4(),
+                  value: o,
+                };
+              }),
             };
           }
 
+          console.log('type', DefaultFormProps[i].hpType, s.fieldName);
           switch (DefaultFormProps[i].hpType) {
             case EHyperparameterParameterType.CHOICE:
-              console.log('creating choice', s.fieldName, s.options);
               return {
                 fieldName: s.fieldName,
-                choices: s.options,
+                choices: s.options?.map((o) => {
+                  return {
+                    key: v4(),
+                    value: o,
+                  };
+                }),
               };
             case EHyperparameterParameterType.UNIFORM:
-              console.log('creating uniform', s.fieldName, s.min, s.max);
-              return {
+              return SearchSpaceUniform.create({
                 fieldName: s.fieldName,
-                min: s.min,
-                max: s.max,
-              };
+                min: s.min!,
+                max: s.max!,
+              });
             case EHyperparameterParameterType.QUNIFORM:
-              return SearchSpaceOption.create({
+              return SearchSpaceQUniform.create({
                 fieldName: s.fieldName,
-                min: s.min,
-                max: s.max,
-                q: s.q,
+                min: s.min!,
+                max: s.max!,
+                q: s.q!,
               });
 
             default:
@@ -292,6 +336,17 @@ export function initializeStore(snapshot = null) {
               return null;
           }
         }).filter((s): s is never => s !== null),
+      },
+      initialPoint: {
+        choices: Object.entries(DefaultInitialPoint).map(([k, v]) => {
+          return {
+            fieldName: k,
+            value: {
+              key: v4(),
+              value: v,
+            },
+          };
+        }),
       },
     });
 

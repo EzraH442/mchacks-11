@@ -6,10 +6,8 @@ import { Checkbox } from './ui/checkbox';
 import { Input } from './ui/input';
 import { X } from 'lucide-react';
 import {
-  ISearchSpaceBoolChoice,
-  ISearchSpaceNumberChoice,
+  ISearchSpaceChoice,
   ISearchSpaceQUniform,
-  ISearchSpaceStringChoice,
   ISearchSpaceUniform,
   useStore,
 } from '@/store';
@@ -18,6 +16,7 @@ import { applySnapshot, getSnapshot } from 'mobx-state-tree';
 import { toast } from './ui/use-toast';
 import { EHyperparameterDataType, EHyperparameterParameterType } from '@/types';
 import { Button } from './ui/button';
+import ChoiceSearchSpace from './Form/ChoiceSearchSpace';
 
 interface DynamicFormProps {
   onSubmit: (data: any) => void;
@@ -30,7 +29,9 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
     const { hyperparameters, searchSpace } = store;
 
     const form = useForm<any>({
-      defaultValues: {},
+      defaultValues: {
+        fields: [],
+      },
     });
 
     const { fields, append, remove } = useFieldArray({
@@ -40,7 +41,7 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
 
     useEffect(() => {
       append(hyperparameters.formFields);
-    }, [hyperparameters.formFields, append]);
+    }, []);
 
     const handleFieldAdded = (data: IAddFormField) => {
       const snapshot = getSnapshot(store);
@@ -67,145 +68,9 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
       remove(index);
     };
 
-    const renderNumberChoiceSearchSpace = (
-      field: ControllerRenderProps<any, any>,
-      index: number,
-    ) => {
-      const options = searchSpace.options.at(index) as ISearchSpaceNumberChoice;
-
-      if (!options) {
-        return <p>error rendering A</p>;
-      }
-
-      return (
-        <FormItem>
-          <FormLabel>
-            {hyperparameters.formFields.at(index)?.fieldName}
-          </FormLabel>
-          <div>
-            {...options.choices.map((choice, i) => {
-              return (
-                <div key={i} className="flex space-x-2 my-1">
-                  <Input
-                    type="number"
-                    value={choice}
-                    onChange={(e) => {
-                      options.updateChoice(i, e.target.valueAsNumber);
-                    }}
-                  />
-                  <button onClick={() => options.removeIndex(i)}>
-                    <X size={16} />
-                  </button>
-                </div>
-              );
-            })}
-            <Button variant="secondary" onClick={() => options.addChoice(0)}>
-              Add choice
-            </Button>
-          </div>
-          <Button
-            variant="destructive"
-            onClick={() => handleFieldRemoved(index)}
-          >
-            Remove Field
-          </Button>
-        </FormItem>
-      );
+    const handleChoiceRemoved = (index: number, choiceIndex: number) => {
+      store.removeHyperparameterChoice(index, choiceIndex);
     };
-
-    const renderStringChoiceSearchSpace = (
-      field: ControllerRenderProps<any, any>,
-      index: number,
-    ) => {
-      const options = searchSpace.options.at(index) as ISearchSpaceStringChoice;
-
-      if (!options) {
-        return <p>error rendering B</p>;
-      }
-
-      return (
-        <FormItem>
-          <FormLabel>
-            {hyperparameters.formFields.at(index)?.fieldName}
-          </FormLabel>
-          <div>
-            {options.choices.map((choice, i) => {
-              return (
-                <div key={i} className="flex space-x-2 my-1">
-                  <Input
-                    value={choice}
-                    onChange={(e) => {
-                      options.updateChoice(i, e.target.value);
-                    }}
-                  />
-                  <button onClick={() => options.removeIndex(i)}>
-                    <X size={16} />
-                  </button>
-                </div>
-              );
-            })}
-            <Button variant="secondary" onClick={() => options.addChoice('')}>
-              Add choice
-            </Button>
-          </div>
-          <Button
-            variant="destructive"
-            onClick={() => handleFieldRemoved(index)}
-          >
-            Remove Field
-          </Button>
-        </FormItem>
-      );
-    };
-
-    const renderBooleanChoiceSearchSpace = (
-      field: ControllerRenderProps<any, any>,
-      index: number,
-    ) => {
-      const options = searchSpace.options.at(index) as ISearchSpaceBoolChoice;
-
-      if (!options) {
-        return <p>error rendering C</p>;
-      }
-
-      return (
-        <FormItem>
-          <FormLabel>
-            {hyperparameters.formFields.at(index)?.fieldName}
-          </FormLabel>
-          <div>
-            {options.choices.map((choice, i) => {
-              return (
-                <div key={i} className="flex justify-between my-1 space-y-0">
-                  <Checkbox
-                    checked={choice}
-                    onCheckedChange={(e) => {
-                      options.updateChoice(i, e === true ? true : false);
-                    }}
-                  />
-                  <button onClick={() => options.removeIndex(i)}>
-                    <X size={16} />
-                  </button>
-                </div>
-              );
-            })}
-            <Button
-              variant="secondary"
-              onClick={() => options.addChoice(false)}
-            >
-              Add choice
-            </Button>
-          </div>
-          <Button
-            variant="destructive"
-            onClick={() => handleFieldRemoved(index)}
-          >
-            Remove Field
-          </Button>
-        </FormItem>
-      );
-    };
-
     const renderUniformSearchSpace = (
       field: ControllerRenderProps<any, any>,
       index: number,
@@ -224,7 +89,7 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
           <div>
             <p>min:</p>
             <Input
-              type="number"
+              // type="number"
               value={options.min}
               onChange={(e) => {
                 options.setMin(e.target.valueAsNumber);
@@ -300,6 +165,7 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
       );
     };
 
+    console.log('fields', fields);
     return (
       <div>
         <Form {...form}>
@@ -309,11 +175,13 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
             </div>
           )}
 
-          {fields.map((field, index) => {
+          {hyperparameters.formFields.map((field, index) => {
+            if (!fields[index]) return <></>;
+
             return (
               <FormField
                 control={form.control}
-                key={field.id}
+                key={fields[index].id}
                 name={`fields[${index}]`}
                 render={
                   ({ field }) => {
@@ -327,21 +195,13 @@ const DynamicForm: React.FC<DynamicFormProps> = observer(
 
                     switch (associatedField.hpType) {
                       case EHyperparameterParameterType.CHOICE:
-                        if (
-                          associatedField.type === EHyperparameterDataType.TEXT
-                        ) {
-                          return renderStringChoiceSearchSpace(field, index);
-                        } else if (
-                          associatedField.type ===
-                          EHyperparameterDataType.NUMBER
-                        ) {
-                          return renderNumberChoiceSearchSpace(field, index);
-                        } else if (
-                          associatedField.type === EHyperparameterDataType.BOOL
-                        ) {
-                          return renderBooleanChoiceSearchSpace(field, index);
-                        }
-                        break;
+                        return (
+                          <ChoiceSearchSpace
+                            field={field}
+                            index={index}
+                            type={EHyperparameterDataType.TEXT}
+                          />
+                        );
                       case EHyperparameterParameterType.UNIFORM:
                         return renderUniformSearchSpace(field, index);
                       case EHyperparameterParameterType.QUNIFORM:

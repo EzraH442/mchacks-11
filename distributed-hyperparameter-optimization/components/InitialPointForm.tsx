@@ -1,12 +1,20 @@
 'use client';
 import React, { useEffect } from 'react';
 import { Form, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { ControllerRenderProps, useFieldArray, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { useStore } from '@/store';
+import { IChoice, ISearchSpaceChoice, useStore } from '@/store';
 import { observer } from 'mobx-react-lite';
+import {
+  Select,
+  SelectItem,
+  SelectContent,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { getSnapshot } from 'mobx-state-tree';
 
 export const formSchema = z.object({
   layers: z.number({
@@ -53,10 +61,19 @@ interface HypFormProps {
 const InitialPointsForm: React.FC<HypFormProps> = observer(
   ({ onSubmit, disabled }) => {
     const store = useStore(null);
-    const { hyperparameters, searchSpace } = store;
+    const { hyperparameters, searchSpace, initialPoint } = store;
+    console.log(getSnapshot(store));
 
     const form = useForm<any>({
-      defaultValues: {},
+      defaultValues: {
+        x: initialPoint.choices.map((choice, index) => {
+          if (hyperparameters.formFields.at(index)?.hpType === 'choice') {
+            return choice.value.key;
+          } else {
+            return choice.value;
+          }
+        }),
+      },
     });
 
     const { fields, append, remove } = useFieldArray({
@@ -66,12 +83,95 @@ const InitialPointsForm: React.FC<HypFormProps> = observer(
 
     useEffect(() => {
       append(hyperparameters.formFields);
-    }, [hyperparameters.formFields, append]);
+    }, []);
+
+    const renderOptionPoint = (
+      field: ControllerRenderProps<any, any>,
+      index: number,
+    ) => {
+      const associatedField = hyperparameters.formFields.at(index);
+      const options = searchSpace.options.at(index) as ISearchSpaceChoice;
+
+      if (!associatedField || options?.choices === undefined) {
+        console.log('no associated field for index', index);
+        return <></>;
+      }
+
+      return (
+        <FormItem>
+          <FormLabel>{associatedField.fieldName}</FormLabel>
+          <Select onValueChange={field.onChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select an option"></SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {...options.choices?.map((option: IChoice, index) => {
+                return (
+                  <SelectItem key={index} value={option.key}>
+                    {option.value}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </FormItem>
+      );
+    };
+
+    const renderNumberPoint = (
+      field: ControllerRenderProps<any, any>,
+      index: number,
+    ) => {
+      const associatedField = hyperparameters.formFields.at(index);
+
+      if (!associatedField) {
+        console.log('no associated field for index', index);
+        return <></>;
+      }
+
+      return (
+        <FormItem>
+          <FormLabel>{associatedField.fieldName}</FormLabel>
+          <Input type="number" {...field} />
+        </FormItem>
+      );
+    };
 
     return (
       <div>
         <Form {...form}>
-          <div>fom</div>
+          {hyperparameters.formFields.map((field, index) => {
+            if (!fields[index]) {
+              return <></>;
+            }
+
+            return (
+              <FormField
+                key={fields[index].id}
+                control={form.control}
+                name={`x[${index}]`}
+                render={({ field }) => {
+                  const associatedField = hyperparameters.formFields.at(index);
+
+                  if (!associatedField) {
+                    console.log('no associated field for index', index);
+                    return <></>;
+                  }
+
+                  switch (associatedField.hpType) {
+                    case 'choice':
+                      return renderOptionPoint(field, index);
+                    case 'uniform':
+                      return renderNumberPoint(field, index);
+                    case 'quniform':
+                      return renderNumberPoint(field, index);
+                    default:
+                      return <></>;
+                  }
+                }}
+              />
+            );
+          })}
         </Form>
       </div>
     );
