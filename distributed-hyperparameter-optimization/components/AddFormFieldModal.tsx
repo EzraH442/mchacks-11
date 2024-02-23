@@ -26,23 +26,12 @@ import {
   SelectValue,
 } from './ui/select';
 import { Checkbox } from './ui/checkbox';
-
-export enum HyperparameterParameterType {
-  UNIFORM = 'uniform',
-  CHOICE = 'choice',
-  QUNIFORM = 'quniform',
-}
-
-export enum HyperparameterDataType {
-  BOOL = 'bool',
-  NUMBER = 'number',
-  TEXT = 'text',
-}
+import { EHyperparameterDataType, EHyperparameterParameterType } from '@/types';
 
 export interface IAddFormField {
   fieldName: string;
-  hpType: HyperparameterParameterType;
-  type: HyperparameterDataType;
+  hpType: EHyperparameterParameterType;
+  type: EHyperparameterDataType;
   array: boolean;
 }
 
@@ -54,8 +43,8 @@ const AddFormFieldModal: React.FC<AddFormFieldModalProps> = ({ onSubmit }) => {
   const form = useForm<IAddFormField>({
     defaultValues: {
       fieldName: '',
-      hpType: HyperparameterParameterType.CHOICE,
-      type: HyperparameterDataType.NUMBER,
+      hpType: EHyperparameterParameterType.CHOICE,
+      type: EHyperparameterDataType.NUMBER,
       array: false,
     },
   });
@@ -130,13 +119,13 @@ const AddFormFieldModal: React.FC<AddFormFieldModalProps> = ({ onSubmit }) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value={HyperparameterParameterType.CHOICE}>
+                    <SelectItem value={EHyperparameterParameterType.CHOICE}>
                       Choice
                     </SelectItem>
-                    <SelectItem value={HyperparameterParameterType.UNIFORM}>
+                    <SelectItem value={EHyperparameterParameterType.UNIFORM}>
                       Uniform
                     </SelectItem>
-                    <SelectItem value={HyperparameterParameterType.QUNIFORM}>
+                    <SelectItem value={EHyperparameterParameterType.QUNIFORM}>
                       Quniform
                     </SelectItem>
                   </SelectContent>
@@ -161,13 +150,13 @@ const AddFormFieldModal: React.FC<AddFormFieldModalProps> = ({ onSubmit }) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value={HyperparameterDataType.NUMBER}>
+                    <SelectItem value={EHyperparameterDataType.NUMBER}>
                       number
                     </SelectItem>
-                    <SelectItem value={HyperparameterDataType.TEXT}>
+                    <SelectItem value={EHyperparameterDataType.TEXT}>
                       text
                     </SelectItem>
-                    <SelectItem value={HyperparameterDataType.BOOL}>
+                    <SelectItem value={EHyperparameterDataType.BOOL}>
                       bool
                     </SelectItem>
                   </SelectContent>
