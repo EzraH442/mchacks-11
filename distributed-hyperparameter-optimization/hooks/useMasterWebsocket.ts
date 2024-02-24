@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import {
-  Client,
-  ClientStatus,
-  EmptyHyperparameterData,
-  ResultsStatus,
-} from '../lib/client';
+import { EmptyHyperparameterData } from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
 import { HyperparameterData } from '@/app/page';
 import { hashHyperparameterData } from '../lib/utils';
+import { EClientStatus, EResultsStatus } from '@/types';
+import { useStore } from '@/store';
+import * as g from '@/auto-generated';
 
 interface IUserMasterWebSocket {
   url: string;
@@ -18,13 +16,10 @@ interface IUserMasterWebSocket {
 const useMasterWebSocket = (params: IUserMasterWebSocket) => {
   const { onRecieveResults, url } = params;
 
-  const [training, setTraining] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [clients, setClients] = useState<Record<string, Client>>({});
-  const [resultsStatus, setResultsStatus] = useState<
-    Record<string, ResultsStatus>
-  >({});
 
+  const store = useStore(null);
+  const { training } = store;
   const { toast } = useToast();
 
   const { sendJsonMessage } = useWebSocket(url, {
@@ -42,111 +37,46 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
     onMessage: (event) => {
       console.log('recieved event: ', event);
-      const data = JSON.parse(event.data);
-
-      if (data.message === 'ping') {
-        toast({
-          description: 'Pong!',
-        });
-        return;
-      }
+      const data = JSON.parse(event.data) as g.Message;
 
       if (!data.id) {
         return;
       }
 
       switch (data.id) {
-        case 'get-all-clients': {
-          const workers = data.workers;
-          setClients(
-            workers.map((worker: any) => ({
-              id: worker.worker_id,
-              name: worker.name,
-              ip: worker.ip,
-              status:
-                worker.status === '0'
-                  ? ClientStatus.Idle
-                  : ClientStatus.Working,
-            })),
-          );
+        case g.AllClientsMessageID: {
+          const d: g.GetAllClientsMessage = data as g.GetAllClientsMessage;
+
+          training.addWorkers(d.workers);
           break;
         }
 
-        case 'client-connected': {
-          const worker = data.worker;
-          const newClients = {
-            ...clients,
-            [worker.worker_id]: {
-              id: worker.worker_id,
-              ip: worker.ip,
-              status:
-                worker.status === '0'
-                  ? ClientStatus.Idle
-                  : ClientStatus.Working,
-              currentTask: EmptyHyperparameterData,
-              name: worker.name,
-            },
-          };
-          setClients(newClients);
+        case g.ClientConnectedMessageID: {
+          const d: g.ClientConnectionStatusMessage =
+            data as g.ClientConnectionStatusMessage;
+
+          training.addWorker(d.worker);
           break;
         }
 
-        case 'client-disconnected': {
-          const workerId = data.worker.worker_id;
-          const newClients = { ...clients };
-          delete newClients[workerId];
-          setClients(newClients);
+        case g.ClientDisconnectedMessageID: {
+          const d: g.ClientConnectionStatusMessage =
+            data as g.ClientConnectionStatusMessage;
+
+          training.removeWorker(d.worker.worker_id);
           break;
         }
 
-        case 'client-started-training': {
-          const workerId = data.worker_id;
-          const hyperparameters = data.parameters as HyperparameterData;
-
-          setResultsStatus((prev) => ({
-            ...prev,
-            [hashHyperparameterData(hyperparameters)]: ResultsStatus.Started,
-          }));
-
-          const newClients = {
-            ...clients,
-            workerId: {
-              ...clients[workerId],
-              status: ClientStatus.Working,
-              currentTask: hyperparameters,
-            },
-          };
-          setClients(newClients);
-          break;
+        case g.ClientStartedTrainingMessageID: {
+          training.addTrainingBatch(data as g.ClientStartedTrainingMessage);
         }
-        case 'client-finished-training': {
-          const workerId = data.worker_id;
-          const result = data.result;
 
-          const newClients = { ...clients };
-          newClients[workerId] = {
-            ...newClients[workerId],
-            status: ClientStatus.Idle,
-          };
-
-          setResultsStatus((prev) => ({
-            ...prev,
-            [hashHyperparameterData(result.hyperparameters)]:
-              ResultsStatus.Finished,
-          }));
-
-          onRecieveResults(result);
-
-          break;
+        case g.ClientFinishedTrainingMessageID: {
+          training.finishTrainingBatch(data as g.ClientFinishedTrainingMessage);
         }
-        case 'genetic-algorithm-status-update': {
-          const status = data.status;
-          console.log('status', status);
-          break;
-        }
-        case 'training-finished': {
-          setTraining(false);
-          break;
+
+        case g.TrainingCompletedMessageID: {
+          training.setFinishedTraining();
         }
       }
 
@@ -158,22 +88,22 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     initialParameters: HyperparameterData,
     searchSpace: any,
   ) => {
-    setTraining(true);
-    sendJsonMessage({
-      ID: 'start-training',
-      params: initialParameters,
-      search_space: searchSpace,
-    });
+    // setTraining(true);
+    // sendJsonMessage({
+    //   ID: 'start-training',
+    //   params: initialParameters,
+    //   search_space: searchSpace,
+    // });
   };
 
   return {
     training,
-    setTraining,
-    clients,
+    // setTraining,
+    // clients,
     connected,
     startTraining,
     sendJsonMessage,
-    resultsStatus,
+    // resultsStatus,
   };
 };
 

@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { HyperparameterData } from '@/app/page';
+import { EClientStatus } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -33,3 +34,27 @@ export function hashHyperparameterData(data: HyperparameterData) {
     data.neuronsPerLayer.join('-')
   );
 }
+
+export function formatStatus(status: EClientStatus) {
+  switch (status) {
+    case EClientStatus.IDLE:
+      return 'Idle';
+    case EClientStatus.WORKING:
+      return 'Working';
+    case EClientStatus.DISCONNECTED:
+      return 'Disconnected';
+  }
+}
+
+export const formatValues = (values: any) => {
+  if (values === undefined) {
+    return 'Select an option';
+  }
+  if (typeof values === 'boolean') {
+    return values ? 'true' : 'false';
+  }
+  if (typeof values === 'object') {
+    return JSON.stringify(values);
+  }
+  return values;
+};

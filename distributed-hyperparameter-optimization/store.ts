@@ -21,11 +21,13 @@ import {
   StagingArea,
   Uniform,
 } from './models/StagingArea';
+import { Training } from './models/Training';
 
 let store: IStore | undefined;
 
 const Store = types.model('Store', {
   stagingArea: StagingArea,
+  training: Training,
 });
 
 export type IStore = Instance<typeof Store>;
@@ -102,6 +104,12 @@ export function initializeStore(snapshot = null) {
     Store.create({
       stagingArea: {
         hyperparameters: _hps,
+        training: {
+          workers: {},
+          batches: [],
+          workerBatchMap: {},
+          currentlyTraining: false,
+        },
       },
     });
 

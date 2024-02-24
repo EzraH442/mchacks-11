@@ -16,24 +16,12 @@ import {
 } from './ui/select';
 import { getSnapshot } from 'mobx-state-tree';
 import { IOptions, IQUniform, IUniform } from '@/models/StagingArea';
+import { formatValues } from '@/lib/utils';
 
 interface HypFormProps {
   onSubmit: (data: any) => void;
   disabled?: boolean;
 }
-
-const formatValues = (values: any) => {
-  if (values === undefined) {
-    return 'Select an option';
-  }
-  if (typeof values === 'boolean') {
-    return values ? 'true' : 'false';
-  }
-  if (typeof values === 'object') {
-    return JSON.stringify(values);
-  }
-  return values;
-};
 
 const OptionPoint: React.FC<{
   hyperparameterName: string;

@@ -1,11 +1,12 @@
-import { Client, ClientStatus, formatStatus } from '@/lib/client';
-import { formatNeuronsPerLayer, round } from '@/lib/utils';
+import { formatNeuronsPerLayer, formatStatus, round } from '@/lib/utils';
 import HyperparametersView from './HyperParamsView';
 import { TypographyH3 } from './Typography/TypographyH3';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { EClientStatus } from '@/types';
+import { IClient } from '@/models/Client';
 
 interface ClientCardProps {
-  client: Client;
+  client: IClient;
 }
 
 const ClientCard: React.FC<ClientCardProps> = ({ client }) => {
@@ -18,7 +19,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client }) => {
         <p>{client.ip}</p>
         <p>{formatStatus(client.status)}</p>
 
-        {client.status === ClientStatus.Working && (
+        {client.status === EClientStatus.WORKING && (
           <div>
             <TypographyH3>Current Params:</TypographyH3>
             <HyperparametersView hyperparameters={client.currentTask} />

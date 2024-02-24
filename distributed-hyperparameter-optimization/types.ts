@@ -1,3 +1,15 @@
+export enum EResultsStatus {
+  NOT_STARTED = 'not-started',
+  IN_PROGRESS = 'in-progress',
+  FINISHED = 'finished',
+}
+
+export enum EClientStatus {
+  IDLE = 'idle',
+  WORKING = 'working',
+  DISCONNECTED = 'disconnected',
+}
+
 export enum EHyperparameterParameterType {
   UNIFORM = 'uniform',
   CHOICE = 'choice',

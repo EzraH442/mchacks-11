@@ -1,28 +1,12 @@
 import { HyperparameterData } from '@/app/page';
-
-export enum ClientStatus {
-  Idle,
-  Working,
-  Disconnected,
-}
+import { EClientStatus } from '@/types';
 
 export interface Client {
   id: string;
   name: string;
   ip: string;
-  status: ClientStatus;
+  status: EClientStatus;
   currentTask: HyperparameterData;
-}
-
-export function formatStatus(status: ClientStatus) {
-  switch (status) {
-    case ClientStatus.Idle:
-      return 'Idle';
-    case ClientStatus.Working:
-      return 'Working';
-    case ClientStatus.Disconnected:
-      return 'Disconnected';
-  }
 }
 
 export const EmptyHyperparameterData: HyperparameterData = {
@@ -31,9 +15,3 @@ export const EmptyHyperparameterData: HyperparameterData = {
   epsilon: 0,
   learningRate: 0,
 };
-
-export enum ResultsStatus {
-  NotStarted,
-  Started,
-  Finished,
-}

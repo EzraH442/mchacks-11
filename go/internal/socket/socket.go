@@ -11,23 +11,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Message struct {
-	ID string `json:"id"`
-}
-
-type TextMessage struct {
-	ID      string `json:"id"`
-	Message string `json:"message"`
-}
-
 type HyperparametersMessage struct {
 	ID              string      `json:"id"`
-	Hyperparameters interface{} `json:"hyperparameters"`
-}
-
-type TestResults struct {
-	ID              string      `json:"ID"`
-	Accuracy        []float64   `json:"accuracy"`
 	Hyperparameters interface{} `json:"hyperparameters"`
 }
 

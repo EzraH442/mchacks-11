@@ -22,7 +22,7 @@ const (
 )
 
 type WorkerClient struct {
-	ID         string
+	ID         uuid.UUID
 	Name       string
 	Connection *websocket.Conn
 	Status     ClientStatus
@@ -31,7 +31,7 @@ type WorkerClient struct {
 func NewWorker(connection *websocket.Conn) *WorkerClient {
 	return &WorkerClient{
 		Status:     Idle,
-		ID:         uuid.NewString(),
+		ID:         uuid.New(),
 		Connection: connection,
 		Name:       ng.Generate(),
 	}

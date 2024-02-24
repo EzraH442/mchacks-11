@@ -4,11 +4,11 @@ import ClientCard from '@/components/ClientCard';
 import { Toaster } from '@/components/ui/toaster';
 import useMasterWebSocket from '@/hooks/useMasterWebsocket';
 import { useEffect, useState } from 'react';
-import InitialPointsForm, { formSchema } from '@/components/InitialPointForm';
+import InitialPointsForm from '@/components/InitialPointForm';
 import { z } from 'zod';
 import { hashHyperparameterData, round } from '@/lib/utils';
 import HyperparametersView from '@/components/HyperParamsView';
-import { EmptyHyperparameterData, ResultsStatus } from '@/lib/client';
+import { EmptyHyperparameterData } from '@/lib/client';
 import { TypographyH1 } from '@/components/Typography/TypographyH1';
 import { TypographySmall } from '@/components/Typography/TypographySmall';
 import { TypographyLarge } from '@/components/Typography/TypographyLarge';
@@ -32,9 +32,7 @@ export interface HyperparameterData {
 }
 
 function App() {
-  const store = useStore(null);
-  console.log('store', getSnapshot(store));
-
+  const { training } = useStore(null);
   const [results, setResults] = useState<Record<string, number>>({});
   const [totalResults, setTotalResults] = useState(0);
   const [bestResult, setBestResult] = useState<number>(0);
@@ -60,55 +58,17 @@ function App() {
     if (hashHyperparameterData(hyperparameters) === lastHyp) {
       console.log('finished');
       sendJsonMessage({ ID: 'finished' });
-      setTraining(false);
+      // setTraining(false);
     }
   };
 
-  const {
-    clients,
-    training,
-    setTraining,
-    startTraining,
-    connected,
-    sendJsonMessage,
-    resultsStatus,
-  } = useMasterWebSocket({
+  const { connected, sendJsonMessage } = useMasterWebSocket({
     onRecieveResults: onRecieveResult,
     url:
       process.env.NODE_ENV === 'production'
         ? 'wss://mchacks11.ezrahuang.com/master-socket'
         : 'ws://localhost:8080/master',
   });
-
-  const [initialPoint, setInitialPoint] = useState<HyperparameterData>(
-    EmptyHyperparameterData,
-  );
-
-  const [searchSpace, setSearchSpace] = useState<any>({});
-
-  const handleInitialPointSubmit = (data: z.infer<typeof formSchema>) => {
-    setInitialPoint({
-      layers: data.layers,
-      neuronsPerLayer: data.neuronsPerLayer,
-      epsilon: data.epsilonMax,
-      learningRate: data.learningRateMax,
-    });
-  };
-
-  const handleSearchSpaceSubmit = (data: any) => {
-    setSearchSpace(data);
-  };
-
-  const clear = () => {
-    setInitialPoint(EmptyHyperparameterData);
-    setResults({});
-    setTotalResults(0);
-    setBestResult(0);
-    setBestParameters(EmptyHyperparameterData);
-  };
-
-  console.log(initialPoint);
-  console.log(resultsStatus);
 
   return (
     <div className="">
@@ -137,9 +97,7 @@ function App() {
                   >
                     {connected ? 'Connected' : 'Disconnected'}
                   </Badge>
-                  <TypographySmall>
-                    Connected clients: {Object.keys(clients).length}
-                  </TypographySmall>
+                  <TypographySmall>Connected clients: {}</TypographySmall>
                 </div>
               </CardContent>
             </Card>
@@ -164,8 +122,8 @@ function App() {
               </CardHeader>
               <CardContent>
                 <SearchSpaceForm
-                  onSubmit={handleInitialPointSubmit}
-                  disabled={training}
+                  onSubmit={() => {}}
+                  disabled={training.currentlyTraining}
                 />
                 {/* <Button
                   className='mt-4'
@@ -185,8 +143,8 @@ function App() {
               </CardHeader>
               <CardContent>
                 <InitialPointsForm
-                  onSubmit={handleSearchSpaceSubmit}
-                  disabled={training}
+                  onSubmit={() => {}}
+                  disabled={training.currentlyTraining}
                 />
                 {/* <Button
                   className='mt-4'
@@ -204,9 +162,9 @@ function App() {
               <Button
                 className="mb-4"
                 variant="outline"
-                disabled={training || !connected}
+                disabled={training.currentlyTraining || !connected}
                 onClick={() => {
-                  startTraining(initialPoint, searchSpace);
+                  // startTraining(initialPoint, searchSpace);
                 }}
               >
                 Start Training
@@ -217,8 +175,8 @@ function App() {
                     <CardTitle>Connected Workers</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {Object.values(clients).map((client) => (
-                      <ClientCard key={client.id} client={client} />
+                    {Array.from(training.workers.entries()).map(([k, v]) => (
+                      <ClientCard key={k} client={v} />
                     ))}
                     {/* Not sure if this will look good with the client cards in it */}
                   </CardContent>
