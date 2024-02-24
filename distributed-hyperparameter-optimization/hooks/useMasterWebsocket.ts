@@ -4,9 +4,14 @@ import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
 import { HyperparameterData } from '@/app/page';
 import { hashHyperparameterData } from '../lib/utils';
-import { EClientStatus, EResultsStatus } from '@/types';
+import {
+  EClientStatus,
+  EHyperparameterParameterType,
+  EResultsStatus,
+} from '@/types';
 import { useStore } from '@/store';
 import * as g from '@/auto-generated';
+import { IOptions, IQUniform, IUniform } from '@/models/StagingArea';
 
 interface IUserMasterWebSocket {
   url: string;
@@ -84,16 +89,76 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     },
   });
 
-  const startTraining = (
-    initialParameters: HyperparameterData,
-    searchSpace: any,
-  ) => {
-    // setTraining(true);
-    // sendJsonMessage({
-    //   ID: 'start-training',
-    //   params: initialParameters,
-    //   search_space: searchSpace,
-    // });
+  const sendInitialParametersMessage = () => {
+    const initialParameters = store.stagingArea.hyperparameters;
+    const searchSpace = store.stagingArea.hyperparameters;
+
+    const search_space: Record<string, any> = {};
+    const initial_params: Record<string, any> = {};
+
+    Array.from(searchSpace.entries()).forEach(([k, v]) => {
+      let ss: any;
+
+      switch (v.parameterType) {
+        case EHyperparameterParameterType.CHOICE: {
+          ss = {};
+
+          Array.from((v.searchSpace as IOptions).optionMap.values()).map(
+            ({ id, value }) => {
+              ss[id] = value;
+            },
+          );
+
+          break;
+        }
+
+        case EHyperparameterParameterType.UNIFORM: {
+          const _ss = v.searchSpace as IUniform;
+          ss = {
+            min: _ss.min,
+            max: _ss.max,
+          };
+          break;
+        }
+
+        case EHyperparameterParameterType.QUNIFORM: {
+          const _ss = v.searchSpace as IQUniform;
+          ss = {
+            min: _ss.min,
+            max: _ss.max,
+            q: _ss.q,
+          };
+          break;
+        }
+      }
+
+      search_space[k] = ss;
+      initial_params[k] = v.searchSpace.selectedValue;
+    });
+
+    const message: g.InitiateTrainingResponse = {
+      id: g.InitiateTrainingResponseID,
+      search_space: searchSpace,
+      initial_params: initialParameters,
+    };
+
+    sendJsonMessage(message);
+  };
+
+  const sendStartTrainingMessage = () => {
+    const message: g.StartTrainingResponse = {
+      id: g.StartTrainingResponseID,
+    };
+
+    sendJsonMessage(message);
+  };
+
+  const sendPauseTrainingMessage = () => {
+    const message: g.PauseTrainingResponse = {
+      id: g.PauseTrainingResponseID,
+    };
+
+    sendJsonMessage(message);
   };
 
   return {
@@ -101,7 +166,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     // setTraining,
     // clients,
     connected,
-    startTraining,
+    startTraining: sendStartTrainingMessage,
     sendJsonMessage,
     // resultsStatus,
   };

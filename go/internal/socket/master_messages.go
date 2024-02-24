@@ -111,3 +111,23 @@ func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
 func (c *MasterClient) SendTrainingCompletedMessage() {
 	c.Connection.WriteJSON(TextMessage{ID: TrainingCompletedMessageID, Message: ""})
 }
+
+const (
+	InitiateTrainingResponseID = "initiate-training"
+	StartTrainingResponseID   = "start-training"
+	PauseTrainingResponseID   = "pause-training"
+)
+
+type InitiateTrainingResponse struct {
+	ID            string      `json:"id"`
+	InitialParams interface{} `json:"initial_params"`
+	SearchSpace   interface{} `json:"search_space"`
+}
+
+type StartTrainingResponse struct {
+	ID string `json:"id"`
+}
+
+type PauseTrainingResponse struct {
+	ID string `json:"id"`
+}

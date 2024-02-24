@@ -44,3 +44,17 @@ export interface GetAllClientsMessage {
   id: string;
   workers: Worker[];
 }
+export const InitiateTrainingResponseID = "initiate-training";
+export const StartTrainingResponseID = "start-training";
+export const PauseTrainingResponseID = "pause-training";
+export interface InitiateTrainingResponse {
+  id: string;
+  initial_params: any;
+  search_space: any;
+}
+export interface StartTrainingResponse {
+  id: string;
+}
+export interface PauseTrainingResponse {
+  id: string;
+}

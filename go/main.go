@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"socket"
 	"sync"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -62,10 +64,11 @@ func (tr *Trainer) Train(parameters []interface{}) {
 
 			if ok1 && ok2 {
 				fmt.Printf("Sending Parameters: %+v to %s\n", combination, worker.Connection.RemoteAddr())
+				parametersId := uuid.New().String()
 				worker.SendHyperparameters(combination, tr.combinations, tr.server)
 
 				for _, mc := range tr.server.MasterClients {
-					mc.SendClientStartedTrainingMessage(worker, combination)
+					mc.SendClientStartedTrainingMessage(worker, parametersId, combination, time.Now().UnixMilli())
 				}
 			}
 
@@ -74,7 +77,7 @@ func (tr *Trainer) Train(parameters []interface{}) {
 				// !! there could still be some workers working through the last batch of parameters
 				// Therefore we do not close the channel yet
 				for _, mc := range tr.server.MasterClients {
-					mc.SendFinished()
+					mc.SendTrainingCompletedMessage()
 				}
 
 				break
@@ -163,24 +166,29 @@ func pongHandler(connection *websocket.Conn, message []byte) {
 	connection.WriteJSON(TextResponse{Message: "pong"})
 }
 
+type TestResultsResponse struct {
+	Loss         float64 `json:"loss"`
+	ParametersId string  `json:"parameters_id"`
+}
+
 func (tr *Trainer) recieveTestResultsHandler(connection *websocket.Conn, message []byte) {
 	fmt.Printf("Recieved test results from %s: %s\n", fmt.Sprint(connection.RemoteAddr()), string(message))
 
 	worker := tr.server.WorkerClients[connection]
 	worker.Status = socket.Idle
-	testResults := socket.TestResults{}
+	testResults := TestResultsResponse{}
 	err := json.Unmarshal(message, &testResults)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	if testResults.Accuracy[1] > tr.topAccuraacy {
-		tr.topAccuraacy = testResults.Accuracy[1]
-		tr.topCombination = testResults.Hyperparameters
+	if testResults.Loss < tr.topAccuraacy {
+		tr.topAccuraacy = testResults.Loss
+		tr.topCombination = testResults.ParametersId
 	}
 
 	for _, mc := range tr.server.MasterClients {
-		mc.SendClientFinishedTrainingMessage(worker, testResults)
+		mc.SendClientFinishedTrainingMessage(worker, testResults.ParametersId, testResults.Loss, time.Now().UnixMilli())
 	}
 
 	// if len(tr.combinations) == 0 {

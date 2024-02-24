@@ -26,7 +26,7 @@ type HyperoptInitMessage struct {
 	InitialBestConfig interface{} `json:"initial_best_config"`
 }
 
-type HyperoptSendResultsMessage struct {
+type HyperoptSendResultsResponse struct {
 	ID      string      `json:"id"`
 	Results interface{} `json:"results"`
 }
@@ -44,7 +44,7 @@ func (c *HyperoptClient) SendInitMessage(searchSpace interface{}, initialBestCon
 }
 
 func (c *HyperoptClient) SendResultsMessage(results interface{}) {
-	c.Connection.WriteJSON(HyperoptSendResultsMessage{
+	c.Connection.WriteJSON(HyperoptSendResultsResponse{
 		ID:      "results",
 		Results: results,
 	})
