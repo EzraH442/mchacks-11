@@ -1,7 +1,9 @@
 package socket
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"github.com/goombaio/namegenerator"
@@ -34,6 +36,36 @@ func NewWorker(connection *websocket.Conn) *WorkerClient {
 		ID:         uuid.New(),
 		Connection: connection,
 		Name:       ng.Generate(),
+	}
+}
+
+func (c *WorkerClient) Listen(s *SocketServer) {
+	for {
+		messageType, message, err := c.Connection.ReadMessage()
+
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+
+		if messageType == websocket.CloseMessage {
+			// TODO: notify master socket of client disconnect
+			// TODO: resend hyperparameters to hyperopt client if client disconnects while running a set of hyperparameters
+			break
+		}
+
+		m := Message{}
+
+		if err = json.Unmarshal(message, &m); err != nil {
+			log.Printf("Error unmarshalling message: %s\n", err.Error())
+			continue
+		}
+
+		if s.workerHandlers[m.ID] == nil {
+			log.Printf("Unrecognized message ID: %s\n", m.ID)
+		}
+
+		go s.hyperoptHandlers[m.ID](c.Connection, message)
 	}
 }
 
