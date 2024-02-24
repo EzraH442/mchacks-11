@@ -95,6 +95,7 @@ export function initializeStore(snapshot = null) {
       parameterType: v.hpType,
       dataType: v.type,
       array: v.array,
+      // @ts-ignore - this is a bug in the library caused by complex union types
       searchSpace: initializeSearchSpace(index, v.fieldName, v.hpType),
     });
   });
@@ -103,13 +104,14 @@ export function initializeStore(snapshot = null) {
     store ??
     Store.create({
       stagingArea: {
+        // @ts-ignore - same bug as above
         hyperparameters: _hps,
-        training: {
-          workers: {},
-          batches: [],
-          workerBatchMap: {},
-          currentlyTraining: false,
-        },
+      },
+      training: {
+        workers: {},
+        batches: {},
+        workerBatchMap: {},
+        currentlyTraining: false,
       },
     });
 

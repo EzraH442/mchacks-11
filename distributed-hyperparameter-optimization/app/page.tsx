@@ -3,12 +3,9 @@ import { Button } from '@/components/ui/button';
 import ClientCard from '@/components/ClientCard';
 import { Toaster } from '@/components/ui/toaster';
 import useMasterWebSocket from '@/hooks/useMasterWebsocket';
-import { useEffect, useState } from 'react';
 import InitialPointsForm from '@/components/InitialPointForm';
 import { z } from 'zod';
-import { hashHyperparameterData, round } from '@/lib/utils';
 import HyperparametersView from '@/components/HyperParamsView';
-import { EmptyHyperparameterData } from '@/lib/client';
 import { TypographyH1 } from '@/components/Typography/TypographyH1';
 import { TypographySmall } from '@/components/Typography/TypographySmall';
 import { TypographyLarge } from '@/components/Typography/TypographyLarge';
@@ -21,49 +18,11 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
 import { useStore } from '@/store';
-import { getSnapshot } from 'mobx-state-tree';
-import { get } from 'http';
-
-export interface HyperparameterData {
-  layers: number;
-  neuronsPerLayer: number[];
-  epsilon: number;
-  learningRate: number;
-}
 
 function App() {
   const { training } = useStore(null);
-  const [results, setResults] = useState<Record<string, number>>({});
-  const [totalResults, setTotalResults] = useState(0);
-  const [bestResult, setBestResult] = useState<number>(0);
-  const [bestParameters, setBestParameters] = useState<HyperparameterData>(
-    EmptyHyperparameterData,
-  );
-  const [lastHyp, setLastHyp] = useState<string>('');
-
-  const onRecieveResult = (data: any) => {
-    const [loss, accuracy] = data.accuracy;
-    const hyperparameters = data.hyperparameters;
-
-    setResults((prev) => ({
-      ...prev,
-      [hashHyperparameterData(hyperparameters)]: accuracy,
-    }));
-    if (data.accuracy[1] > bestResult) {
-      setBestResult(accuracy);
-      setBestParameters(hyperparameters);
-    }
-    setTotalResults((prev) => prev + 1);
-
-    if (hashHyperparameterData(hyperparameters) === lastHyp) {
-      console.log('finished');
-      sendJsonMessage({ ID: 'finished' });
-      // setTraining(false);
-    }
-  };
 
   const { connected, sendJsonMessage } = useMasterWebSocket({
-    onRecieveResults: onRecieveResult,
     url:
       process.env.NODE_ENV === 'production'
         ? 'wss://mchacks11.ezrahuang.com/master-socket'
@@ -97,7 +56,9 @@ function App() {
                   >
                     {connected ? 'Connected' : 'Disconnected'}
                   </Badge>
-                  <TypographySmall>Connected clients: {}</TypographySmall>
+                  <TypographySmall>
+                    Connected clients: {training.workers.size}
+                  </TypographySmall>
                 </div>
               </CardContent>
             </Card>
@@ -190,12 +151,30 @@ function App() {
                       Trials Remaining: WIP (implement realtime feedback)
                       {/* Trials Remaining: WIP {initialPoint.length - totalResults} */}
                     </p>
-                    <p>Best Loss: {round(bestResult, 3)}</p>
-                    <p>Best Trial: </p>
+                    {training.hasBestBatch() && (
+                      <div>
+                        <p>{`Best Loss: ${training.getBestBatch()!.loss}`}</p>
+                        <p>Best Trial: </p>
+                        <p>
+                          <HyperparametersView
+                            batchId={training.bestBatchId!}
+                          />
+                        </p>
+                      </div>
+                    )}
                     {/* Implement! */}
                     <p>Trials</p>
-                    {totalResults !== 0 ? (
-                      <HyperparametersView hyperparameters={bestParameters} />
+                    {training.batches.size !== 0 ? (
+                      <div>
+                        {Array.from(training.batches.entries()).map(
+                          ([k, v]) => (
+                            <div key={k}>
+                              <p>{`Trial ${k}`}</p>
+                              <HyperparametersView batchId={k} />
+                            </div>
+                          ),
+                        )}
+                      </div>
                     ) : (
                       <p>No results yet</p>
                     )}

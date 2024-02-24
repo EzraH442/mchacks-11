@@ -66,6 +66,7 @@ const SearchSpaceForm: React.FC<HypFormProps> = ({ onSubmit, disabled }) => {
         name: data.fieldName,
         dataType: data.type,
         parameterType: data.hpType,
+        // @ts-ignore - this is a bug in the library caused by complex union types
         searchSpace: createStagingArea(data.hpType),
       });
     } catch (e) {

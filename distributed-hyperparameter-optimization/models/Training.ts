@@ -2,7 +2,6 @@ import { EClientStatus, EResultsStatus } from '@/types';
 import { Instance, types } from 'mobx-state-tree';
 import { WorkerMap } from './Client';
 import * as g from '@/auto-generated';
-import { match } from 'assert';
 
 const ResultsStatus = types.enumeration(
   'ResultsStatus',
@@ -47,11 +46,21 @@ const WorkerBatchMapEntry = types.model('WorkerBatchMapEntry', {
 
 export const Training = types
   .model('Training', {
-    currentlyTraining: types.boolean,
     workers: WorkerMap,
     batches: types.map(TrainingBatch),
     workerBatchMap: types.map(WorkerBatchMapEntry),
+    currentlyTraining: types.boolean,
+    bestBatchId: types.maybe(types.string),
   })
+  .views((self) => ({
+    hasBestBatch() {
+      return !!self.bestBatchId && !!self.batches.get(self.bestBatchId);
+    },
+
+    getBestBatch() {
+      return self.batches.get(self.bestBatchId!);
+    },
+  }))
   .actions((self) => ({
     addWorker(worker: g.Worker) {
       self.workers.set(worker.worker_id, {
@@ -98,6 +107,13 @@ export const Training = types
         batch.setTimeFinished(m.time_finished);
         batch.setLoss(m.loss);
         batch.setStatus(EResultsStatus.FINISHED);
+      }
+
+      if (
+        !!self.bestBatchId &&
+        self.batches.get(self.bestBatchId)!.loss! > m.loss
+      ) {
+        self.bestBatchId = m.parameters_id;
       }
     },
     setFinishedTraining() {

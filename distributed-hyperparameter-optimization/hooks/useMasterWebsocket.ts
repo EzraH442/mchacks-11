@@ -1,25 +1,17 @@
 import { useState } from 'react';
-import { EmptyHyperparameterData } from '../lib/client';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
-import { HyperparameterData } from '@/app/page';
-import { hashHyperparameterData } from '../lib/utils';
-import {
-  EClientStatus,
-  EHyperparameterParameterType,
-  EResultsStatus,
-} from '@/types';
+import { EHyperparameterParameterType } from '@/types';
 import { useStore } from '@/store';
 import * as g from '@/auto-generated';
 import { IOptions, IQUniform, IUniform } from '@/models/StagingArea';
 
 interface IUserMasterWebSocket {
   url: string;
-  onRecieveResults: (result: any) => void;
 }
 
 const useMasterWebSocket = (params: IUserMasterWebSocket) => {
-  const { onRecieveResults, url } = params;
+  const { url } = params;
 
   const [connected, setConnected] = useState(false);
 
@@ -166,7 +158,6 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     // setTraining,
     // clients,
     connected,
-    startTraining: sendStartTrainingMessage,
     sendJsonMessage,
     // resultsStatus,
   };
