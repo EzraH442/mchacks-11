@@ -63,5 +63,5 @@ func (c *WorkerClient) SendHyperparameters(hyperparameters interface{}, channel 
 }
 
 func (c *WorkerClient) SendFinished() {
-	c.Connection.WriteJSON(TextMessage{ID: "finished-training", Message: "Finished training"})
+	c.Connection.WriteJSON(Message{ID: "finished-training"})
 }

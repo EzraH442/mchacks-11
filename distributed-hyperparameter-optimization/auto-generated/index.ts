@@ -3,24 +3,24 @@
 //////////
 // source: master_messages.go
 
+export const PongMessageId = "pong";
 export const ClientConnectedMessageID = "client-connected";
 export const ClientDisconnectedMessageID = "client-disconnected";
 export const AllClientsMessageID = "get-all-clients";
 export const ClientFinishedTrainingMessageID = "client-finished-training";
 export const ClientStartedTrainingMessageID = "client-started-training";
 export const TrainingCompletedMessageID = "training-completed";
-export interface Message {
-  id: string;
-}
-export interface TextMessage {
-  id: string;
-  message: string;
-}
 export interface Worker {
   worker_id: string /* uuid */;
   ip: string;
   name: string;
   status: string;
+}
+export interface Message {
+  id: string;
+}
+export interface PongMessage {
+  id: string;
 }
 export interface ClientConnectionStatusMessage {
   id: string;
@@ -47,6 +47,7 @@ export interface GetAllClientsMessage {
 export const InitiateTrainingResponseID = "initiate-training";
 export const StartTrainingResponseID = "start-training";
 export const PauseTrainingResponseID = "pause-training";
+export const PingResponseID = "ping";
 export interface InitiateTrainingResponse {
   id: string;
   initial_params: any;
@@ -56,5 +57,8 @@ export interface StartTrainingResponse {
   id: string;
 }
 export interface PauseTrainingResponse {
+  id: string;
+}
+export interface PingResponse {
   id: string;
 }

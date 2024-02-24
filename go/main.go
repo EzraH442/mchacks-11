@@ -95,8 +95,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	pingpong := map[string]func(connection *websocket.Conn, message []byte){
-		"ping": pingHandler,
-		"pong": pongHandler,
+		socket.PingResponseID: pingHandler,
 	}
 
 	s := socket.New(pingpong, pingpong)
@@ -159,11 +158,7 @@ type TextResponse struct {
 }
 
 func pingHandler(connection *websocket.Conn, message []byte) {
-	connection.WriteJSON(TextResponse{Message: "ping"})
-}
-
-func pongHandler(connection *websocket.Conn, message []byte) {
-	connection.WriteJSON(TextResponse{Message: "pong"})
+	connection.WriteJSON(socket.PongMessage{ID: socket.PongMessageId})
 }
 
 type TestResultsResponse struct {

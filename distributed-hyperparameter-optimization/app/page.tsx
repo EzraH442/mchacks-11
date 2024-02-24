@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
 import { Github } from 'lucide-react';
 import { useStore } from '@/store';
+import * as g from '@/auto-generated';
 
 function App() {
   const { training } = useStore(null);
@@ -43,7 +44,8 @@ function App() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    sendJsonMessage({ ID: 'ping' });
+                    const message: g.PingResponse = { id: g.PingResponseID };
+                    sendJsonMessage(message);
                   }}
                 >
                   Ping

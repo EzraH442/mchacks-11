@@ -41,6 +41,11 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
       }
 
       switch (data.id) {
+        case g.PongMessageId: {
+          toast({ title: 'Pong!' });
+          break;
+        }
+
         case g.AllClientsMessageID: {
           const d: g.GetAllClientsMessage = data as g.GetAllClientsMessage;
 

@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	PongMessageId                   = "pong"
 	ClientConnectedMessageID        = "client-connected"
 	ClientDisconnectedMessageID     = "client-disconnected"
 	AllClientsMessageID             = "get-all-clients"
@@ -15,20 +16,19 @@ const (
 	TrainingCompletedMessageID      = "training-completed"
 )
 
-type Message struct {
-	ID string `json:"id"`
-}
-
-type TextMessage struct {
-	ID      string `json:"id"`
-	Message string `json:"message"`
-}
-
 type Worker struct {
 	WorkerID uuid.UUID `json:"worker_id"`
 	IP       string    `json:"ip"`
 	Name     string    `json:"name"`
 	Status   string    `json:"status"`
+}
+
+type Message struct {
+	ID string `json:"id"`
+}
+
+type PongMessage struct {
+	ID string `json:"id"`
 }
 
 type ClientConnectionStatusMessage struct {
@@ -55,6 +55,10 @@ type ClientFinishedTrainingMessage struct {
 type GetAllClientsMessage struct {
 	ID      string   `json:"id"`
 	Workers []Worker `json:"workers"`
+}
+
+func (c *MasterClient) SendPongMessage() {
+	c.Connection.WriteJSON(PongMessage{ID: PongMessageId})
 }
 
 func (c *MasterClient) SendGetAllClientsMessage(Workers []Worker) {
@@ -109,13 +113,14 @@ func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
 }
 
 func (c *MasterClient) SendTrainingCompletedMessage() {
-	c.Connection.WriteJSON(TextMessage{ID: TrainingCompletedMessageID, Message: ""})
+	c.Connection.WriteJSON(Message{ID: TrainingCompletedMessageID})
 }
 
 const (
 	InitiateTrainingResponseID = "initiate-training"
-	StartTrainingResponseID   = "start-training"
-	PauseTrainingResponseID   = "pause-training"
+	StartTrainingResponseID    = "start-training"
+	PauseTrainingResponseID    = "pause-training"
+	PingResponseID             = "ping"
 )
 
 type InitiateTrainingResponse struct {
@@ -129,5 +134,9 @@ type StartTrainingResponse struct {
 }
 
 type PauseTrainingResponse struct {
+	ID string `json:"id"`
+}
+
+type PingResponse struct {
 	ID string `json:"id"`
 }
