@@ -101,13 +101,11 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
           ss = [];
 
           Array.from((v.searchSpace as IOptions).optionMap.values()).map(
-            ({ id, value }) => {
+            ({ id, value }, i) => {
               ss.push(value);
 
               if (v.searchSpace.selectedValue === id) {
-                initial_params[v.name] = (
-                  v.searchSpace as IOptions
-                ).optionMap.get(id)!.value;
+                initial_params[v.name] = i;
               }
             },
           );

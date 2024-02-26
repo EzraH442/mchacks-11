@@ -12,7 +12,7 @@ logging.basicConfig(
 
 
 def create_ws_message(message_id, data):
-    return json.dumps({"message_id": message_id, "data": data})
+    return json.dumps({"ID": message_id, "data": data})
 
 
 def create_push_opt_params_message(params, id):
@@ -63,6 +63,8 @@ class Optimizer:
         self.search_space = space
         self.initial_best_config = initial_best_config
 
+        self.start_optimization_handler()
+
     def get_results_handler(self, results):
         logging.debug(f"Received Results: {results}")
 
@@ -75,14 +77,16 @@ class Optimizer:
     def start_optimization_handler(self):
         logging.info("Starting Optimization")
 
+        print("fmit")
         best = fmin(
             fn=self.objective,  # Objective Function to optimize
-            space=self.search_space,  # Hyperparameter's Search Space
-            points_to_evaluate=self.initial_best_config,
+            verbose=True,
+            space=self.search_space,
+            points_to_evaluate=[self.initial_best_config],
             algo=tpe.suggest,  # Optimization algorithm (representative TPE)
-            max_evals=100,  # Number of optimization attempts
-            trials=self.training_history,  # Record the results
-            trials_save_file="./pacman_trials.p",
+            # max_evals=3,  # Number of optimization attempts
+            # trials=self.training_history,  # Record the results
+            # trials_save_file="./pacman_trials.p",
         )
 
         logging.info(f"Optimization Completed. Best Parameters: {best}")

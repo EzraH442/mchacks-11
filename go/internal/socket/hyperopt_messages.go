@@ -1,10 +1,10 @@
 package socket
 
 const (
-	HyperoptInitMessageID              = "init-hyperopt"
-	HyperoptStartOptimizationMessageID = "start-optimization"
-	HyperoptSendResultsMessageID       = "results"
-	HyperoptRecieveNextParamsMessageID = "recieve-params"
+	HyperoptInitMessageID               = "init-hyperopt"
+	HyperoptStartOptimizationMessageID  = "start-optimization"
+	HyperoptSendResultsMessageID        = "results"
+	HyperoptRecieveNextParamResponsesID = "push-opt-params"
 )
 
 type HyperoptInitMessage struct {

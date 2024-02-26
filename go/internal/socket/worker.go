@@ -30,6 +30,17 @@ type WorkerClient struct {
 	Status     ClientStatus
 }
 
+type SendClientParamsMessage struct {
+	ID       string      `json:"id"`
+	Params   interface{} `json:"params"`
+	ParamsID string      `json:"params_id"`
+}
+
+const (
+	SendClientParamsMessageID      = "send-params"
+	RecieveClientResultsResponseID = "recieve-results"
+)
+
 func NewWorker(connection *websocket.Conn) *WorkerClient {
 	return &WorkerClient{
 		Status:     Idle,
@@ -49,8 +60,7 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 		}
 
 		if messageType == websocket.CloseMessage {
-			// TODO: notify master socket of client disconnect
-			// TODO: resend hyperparameters to hyperopt client if client disconnects while running a set of hyperparameters
+			s.onWorkerDisconnect(c.Connection)
 			break
 		}
 
@@ -70,31 +80,6 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 	}
 }
 
-func (c *WorkerClient) SendHyperparameters(hyperparameters interface{}, channel chan<- interface{}, server *Server) {
-	if c.Status != Idle {
-		fmt.Printf("Client is not idle, cannot send hyperparameters")
-		return
-	}
-
-	c.Status = Running
-	c.Connection.WriteJSON(HyperparametersMessage{ID: "start-hyperparameters", Hyperparameters: hyperparameters})
-	fmt.Printf("Sent hyperparameters %s to client %s\n", fmt.Sprint(hyperparameters), c.Connection.RemoteAddr())
-	ch := c.Connection.CloseHandler
-	c.Connection.SetCloseHandler(func(code int, text string) error {
-		if c.Status == Running {
-			fmt.Printf("Client %s disconnected while running\n", c.Connection.RemoteAddr())
-			// recycle hyperparameters
-			channel <- hyperparameters
-			for _, mc := range server.MasterClients {
-				mc.SendClientDisconnectedMessage(c)
-			}
-
-			delete(server.WorkerClients, c.Connection) // Removing the connection
-		}
-		return ch()(code, text)
-	})
-}
-
-func (c *WorkerClient) SendFinished() {
-	c.Connection.WriteJSON(Message{ID: "finished-training"})
+func (c *WorkerClient) SendParams(params interface{}, paramsID string) {
+	c.Connection.WriteJSON(SendClientParamsMessage{ID: SendClientParamsMessageID, Params: params, ParamsID: paramsID})
 }
