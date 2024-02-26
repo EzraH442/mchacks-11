@@ -107,7 +107,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
               if (v.searchSpace.selectedValue === id) {
                 initial_params[v.name] = (
                   v.searchSpace as IOptions
-                ).optionMap.get(id);
+                ).optionMap.get(id)!.value;
               }
             },
           );

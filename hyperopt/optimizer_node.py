@@ -102,10 +102,10 @@ class Optimizer:
         params, loss = self.results_map[params_id]
         return loss
 
-    def message_handler(self, message):
+    def message_handler(self, other, message):
         logging.info(f"Received: {message}")
 
-        data = json.loads(message.decode("utf-8"))
+        data = json.loads(message)
         logging.debug(f"Received: {data}")
 
         if "id" not in data:
