@@ -39,6 +39,7 @@ func (c *MasterClient) Listen(s *SocketServer) {
 
 		if s.masterHandlers[m.ID] == nil {
 			log.Printf("Unrecognized message ID: %s\n", m.ID)
+			continue
 		}
 
 		go s.masterHandlers[m.ID](c.Connection, message)

@@ -1,6 +1,8 @@
 package socket
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -83,6 +85,7 @@ func (s *SocketServer) Start() error {
 	http.HandleFunc("/", s.workerHandler)
 
 	// http.HandleFunc("/upload-training-files", s.uploadTrainingFilesHandler) TODO - add route for uploading training files (model file, training file, evaluation file)
+	fmt.Println("Starting server on :8080")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		return err
@@ -90,20 +93,19 @@ func (s *SocketServer) Start() error {
 	return nil
 }
 
-func NewSocketServer(
-	workerHandlers map[string]func(connection *websocket.Conn, message []byte),
-	hyperoptHandlers map[string]func(connection *websocket.Conn, message []byte),
-	masterHandlers map[string]func(connection *websocket.Conn, message []byte),
-) *SocketServer {
-	return &SocketServer{
+func NewSocketServer() *SocketServer {
+	s := &SocketServer{
 		WorkerClients:    make(map[*websocket.Conn]*WorkerClient),
-		workerHandlers:   workerHandlers,
-		hyperoptHandlers: hyperoptHandlers,
-		masterHandlers:   masterHandlers,
+		workerHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
+		hyperoptHandlers: make(map[string]func(connection *websocket.Conn, message []byte)),
+		masterHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
 		trainingStateMap: make(map[string]int),
 		paramsQueue:      make(chan interface{}, 64),
 		availableWorkers: make(chan *WorkerClient, 64),
 	}
+
+	s.masterHandlers[InitiateTrainingResponseID] = s.onRecievedInitialSearchSpaceAndInitialPoint
+	return s
 }
 
 func (s *SocketServer) onWorkerDisconnect(conn *websocket.Conn) {
@@ -139,4 +141,7 @@ func (s *SocketServer) onRecievedStartTraining(conn *websocket.Conn, message []b
 }
 
 func (s *SocketServer) onRecievedInitialSearchSpaceAndInitialPoint(conn *websocket.Conn, message []byte) {
+	r := InitiateTrainingResponse{}
+	json.Unmarshal(message, &r)
+	s.HyperoptClient.SendInitMessage(r.SearchSpace, r.InitialParams)
 }

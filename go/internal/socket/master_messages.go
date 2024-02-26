@@ -121,6 +121,7 @@ const (
 	StartTrainingResponseID    = "start-training"
 	PauseTrainingResponseID    = "pause-training"
 	PingResponseID             = "ping"
+	GetAllClientsResponseID    = "get-all-clients"
 )
 
 type InitiateTrainingResponse struct {
@@ -138,5 +139,9 @@ type PauseTrainingResponse struct {
 }
 
 type PingResponse struct {
+	ID string `json:"id"`
+}
+
+type GetAllClientsResponse struct {
 	ID string `json:"id"`
 }

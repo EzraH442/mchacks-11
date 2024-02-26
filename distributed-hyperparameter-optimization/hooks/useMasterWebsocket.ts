@@ -98,11 +98,17 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
       switch (v.parameterType) {
         case EHyperparameterParameterType.CHOICE: {
-          ss = {};
+          ss = [];
 
           Array.from((v.searchSpace as IOptions).optionMap.values()).map(
             ({ id, value }) => {
-              ss[id] = value;
+              ss.push(value);
+
+              if (v.searchSpace.selectedValue === id) {
+                initial_params[v.name] = (
+                  v.searchSpace as IOptions
+                ).optionMap.get(id);
+              }
             },
           );
 
@@ -115,6 +121,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
             min: _ss.min,
             max: _ss.max,
           };
+          initial_params[v.name] = v.searchSpace.selectedValue;
           break;
         }
 
@@ -125,18 +132,18 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
             max: _ss.max,
             q: _ss.q,
           };
+          initial_params[v.name] = v.searchSpace.selectedValue;
           break;
         }
       }
 
-      search_space[k] = ss;
-      initial_params[k] = v.searchSpace.selectedValue;
+      search_space[v.name] = ss;
     });
 
     const message: g.InitiateTrainingResponse = {
       id: g.InitiateTrainingResponseID,
-      search_space: searchSpace,
-      initial_params: initialParameters,
+      search_space: search_space,
+      initial_params: initial_params,
     };
 
     sendJsonMessage(message);
@@ -164,6 +171,7 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
     // clients,
     connected,
     sendJsonMessage,
+    sendInitialParametersMessage,
     // resultsStatus,
   };
 };

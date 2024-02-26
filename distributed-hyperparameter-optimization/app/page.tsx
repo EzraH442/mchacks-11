@@ -23,12 +23,17 @@ import * as g from '@/auto-generated';
 function App() {
   const { training } = useStore(null);
 
-  const { connected, sendJsonMessage } = useMasterWebSocket({
-    url:
-      process.env.NODE_ENV === 'production'
-        ? 'wss://mchacks11.ezrahuang.com/master-socket'
-        : 'ws://localhost:8080/master',
-  });
+  const { connected, sendJsonMessage, sendInitialParametersMessage } =
+    useMasterWebSocket({
+      url:
+        process.env.NODE_ENV === 'production'
+          ? 'wss://mchacks11.ezrahuang.com/master-socket'
+          : 'ws://localhost:8080/master',
+    });
+
+  const handleStartTrainingButtonClick = () => {
+    sendInitialParametersMessage();
+  };
 
   return (
     <div className="">
@@ -126,9 +131,7 @@ function App() {
                 className="mb-4"
                 variant="outline"
                 disabled={training.currentlyTraining || !connected}
-                onClick={() => {
-                  // startTraining(initialPoint, searchSpace);
-                }}
+                onClick={handleStartTrainingButtonClick}
               >
                 Start Training
               </Button>

@@ -63,6 +63,7 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 
 		if s.workerHandlers[m.ID] == nil {
 			log.Printf("Unrecognized message ID: %s\n", m.ID)
+			continue
 		}
 
 		go s.hyperoptHandlers[m.ID](c.Connection, message)

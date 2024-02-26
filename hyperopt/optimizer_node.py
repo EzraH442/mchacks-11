@@ -1,12 +1,13 @@
 import time
-from hyperopt import SparkTrials, fmin, tpe
+from hyperopt import Trials, fmin, tpe
 import json
 import websocket
 import uuid
 import logging
 
+websocket.enableTrace(True)
 logging.basicConfig(
-    filename="hyperopt.log", level=logging.DEBUG, format="%(asctime)s: %(message)s"
+    filename="hyperopt.log", level=logging.INFO, format="%(asctime)s: %(message)s"
 )
 
 
@@ -19,7 +20,7 @@ def create_push_opt_params_message(params, id):
     return create_ws_message("push-opt-params", p)
 
 
-server = "ws://localhost:8765"
+server = "ws://localhost:8080"
 
 
 class Optimizer:
@@ -31,15 +32,24 @@ class Optimizer:
         self.ws_connection = self.create_connection()
         self.results_map = dict()
         self.parallelism = 8
-        self.spark_trials = SparkTrials(parallelism=self.parallelism)
+        self.trials = Trials()
+        print("Optimizer Initialized")
+
+    def listen(self):
+        self.ws_connection.run_forever()
 
     def create_connection(self):
-        logging.info(f"Creating Connection to {server}")
+        logging.info(f"Creating Connection to {server}/hyperopt")
 
         try:
-            return websocket.create_connection(
-                f"{server}/hyperopt", on_message=self.message_handler
+            ws = websocket.WebSocketApp(
+                f"{server}/hyperopt",
+                on_open=self.on_open,
+                on_message=self.message_handler,
+                on_error=self.on_error,
+                on_close=self.on_close,
             )
+            return ws
 
         except Exception as e:
             logging.error(f"Error: {e}")
@@ -110,8 +120,26 @@ class Optimizer:
         elif data["id"] == "start-optimization":
             self.start_optimization_handler()
 
+    def on_open(self, ws):
+        logging.info("Connection Opened")
+
+    def on_error(self, ws, error):
+        logging.error(f"Error: {error}")
+
+    def on_close(self, close_status_code, close_msg, test):
+        print(close_status_code, close_msg, test)
+        logging.info("Connection Closed - sleeping for 5 seconds and reconnecting...")
+        time.sleep(5)
+        self.ws_connection = self.create_connection()
+        self.ws_connection.run_forever()
+
     def close(self):
         self.ws_connection.close()
 
 
-optimizer = Optimizer()
+def main():
+    optimizer = Optimizer()
+    optimizer.listen()
+
+
+main()
