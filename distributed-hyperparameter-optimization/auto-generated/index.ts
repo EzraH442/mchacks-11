@@ -10,6 +10,7 @@ export const AllClientsMessageID = "get-all-clients";
 export const ClientFinishedTrainingMessageID = "client-finished-training";
 export const ClientStartedTrainingMessageID = "client-started-training";
 export const TrainingCompletedMessageID = "training-completed";
+export const ReadyToTrainMessageID = "ready-to-train";
 export interface Worker {
   worker_id: string /* uuid */;
   ip: string;
@@ -40,14 +41,24 @@ export interface ClientFinishedTrainingMessage {
   loss: number /* float64 */;
   time_finished: number /* int64 */;
 }
+export interface ClientReadyToTrainMessage {
+  id: string;
+  worker_id: string;
+}
 export interface GetAllClientsMessage {
   id: string;
   workers: Worker[];
+}
+export interface UploadFilesMessage {
+  model_file_id: string;
+  training_file_id: string;
+  evaluation_file_id: string;
 }
 export const InitiateTrainingResponseID = "initiate-training";
 export const StartTrainingResponseID = "start-training";
 export const PauseTrainingResponseID = "pause-training";
 export const PingResponseID = "ping";
+export const GetAllClientsResponseID = "get-all-clients";
 export interface InitiateTrainingResponse {
   id: string;
   initial_params: any;
@@ -60,5 +71,8 @@ export interface PauseTrainingResponse {
   id: string;
 }
 export interface PingResponse {
+  id: string;
+}
+export interface GetAllClientsResponse {
   id: string;
 }

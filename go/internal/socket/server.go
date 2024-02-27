@@ -3,9 +3,13 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -35,6 +39,10 @@ type SocketServer struct {
 
 	trainingIdStateMap map[string]TrainingRun
 	clientJobMap       map[*websocket.Conn]string
+
+	modelFileId      string
+	trainingFileId   string
+	evaluationFileId string
 }
 
 func (s *SocketServer) masterHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,19 +92,113 @@ func (s *SocketServer) workerHandler(w http.ResponseWriter, r *http.Request) {
 
 	client := NewWorker(conn)
 	s.WorkerClients[conn] = client
+	client.SendFiles(s.modelFileId, s.trainingFileId, s.evaluationFileId)
 	client.Listen(s)
-	delete(s.WorkerClients, conn)
 	conn.Close()
 }
 
+const MAX_UPLOAD_SIZE = 1024 * 1024 * 50 // 50 MB
+
+func writeFile(f multipart.File) (string, error) {
+	id := uuid.NewString()
+	dst, err := os.Create("uploads/" + id)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	defer dst.Close()
+	_, err = io.Copy(dst, f)
+	if err != nil {
+		fmt.Println(err)
+		return "", err
+	}
+	return id, nil
+}
+
+func readFile(id string) (*os.File, error) {
+	return os.Open("uploads/" + id)
+}
+
+func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	if err := r.ParseMultipartForm(MAX_UPLOAD_SIZE); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Files too large", http.StatusBadRequest)
+		return
+	}
+
+	modelFile, _, err := r.FormFile("model")
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error processing model file", http.StatusBadRequest)
+		return
+	}
+	defer modelFile.Close()
+	modelFileId, err := writeFile(modelFile)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error processing model file", http.StatusBadRequest)
+		return
+	}
+
+	trainingFile, _, err := r.FormFile("training")
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error processing training file", http.StatusBadRequest)
+		return
+	}
+	defer trainingFile.Close()
+	trainingFileId, err := writeFile(trainingFile)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error processing training file", http.StatusBadRequest)
+		return
+	}
+
+	evaluationFile, _, err := r.FormFile("evaluation")
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error processing evaluation file", http.StatusBadRequest)
+		return
+	}
+	defer evaluationFile.Close()
+	evaluationFileId, err := writeFile(evaluationFile)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Error processing evaluation file", http.StatusBadRequest)
+		return
+	}
+
+	UploadFilesMessage := UploadFilesMessage{
+		ModelFileId:      modelFileId,
+		TrainingFileId:   trainingFileId,
+		EvlauationFileId: evaluationFileId,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(UploadFilesMessage)
+}
+
 func (s *SocketServer) Start() error {
+	// create uploads folder if not exists
+	err := os.MkdirAll("uploads", os.ModePerm)
+	if err != nil {
+		return err
+	}
+
 	http.HandleFunc("/master", s.masterHandler)
 	http.HandleFunc("/hyperopt", s.hyperoptHandler)
 	http.HandleFunc("/", s.workerHandler)
 
-	// http.HandleFunc("/upload-training-files", s.uploadTrainingFilesHandler) TODO - add route for uploading training files (model file, training file, evaluation file)
+	http.HandleFunc("/upload", s.uploadHandler)
 	fmt.Println("Starting server on :8080")
-	err := http.ListenAndServe(":8080", nil)
+
+	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
 		return err
 	}
@@ -119,7 +221,17 @@ func NewSocketServer() *SocketServer {
 	s.masterHandlers[PingResponseID] = s.onMasterRecievedPing
 	s.hyperoptHandlers[HyperoptRecieveNextParamResponsesID] = s.onRecievedNextHyperparametersFromHyperopt
 
+	s.workerHandlers[ReadyToTrainResponseId] = s.onRecievedClientReadyToTrain
+	s.workerHandlers[RecieveParamsResultsResponseID] = s.onRecievedTrainingResults
+
 	return s
+}
+
+func (s *SocketServer) onWorkerConnect(conn *websocket.Conn) {
+	c := NewWorker(conn)
+	s.WorkerClients[conn] = c
+	s.availableWorkers <- c
+	s.MasterClient.SendClientConnectedMessage(c)
 }
 
 func (s *SocketServer) onWorkerDisconnect(conn *websocket.Conn) {
@@ -135,10 +247,25 @@ func (s *SocketServer) onWorkerDisconnect(conn *websocket.Conn) {
 	s.MasterClient.SendClientDisconnectedMessage(s.WorkerClients[c.Connection])
 }
 
-func (s *SocketServer) onRecievedNextHyperparameters(conn *websocket.Conn, message []byte) {
-}
-
 func (s *SocketServer) onRecievedTrainingResults(conn *websocket.Conn, message []byte) {
+	response := RecieveParamsResultsResponse{}
+	err := json.Unmarshal(message, &response)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	trainingRun := s.trainingIdStateMap[response.ParamsId]
+	trainingRun.Status = TrainingStateFinished
+	trainingRun.Loss = response.Loss
+	s.trainingIdStateMap[response.ParamsId] = trainingRun
+	worker := s.WorkerClients[conn]
+	worker.Status = Idle
+
+	s.MasterClient.SendClientFinishedTrainingMessage(s.WorkerClients[conn], response.ParamsId, response.Loss, time.Now().UnixMilli())
+	s.HyperoptClient.SendResultsMessage(response.ParamsId, response.Loss)
+	s.availableWorkers <- worker
 }
 
 func (s *SocketServer) onRecievedHyperoptComplete(conn *websocket.Conn, message []byte) {
@@ -181,8 +308,14 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 		return
 	}
 
-	worker := <-s.availableWorkers
-	worker.SendParams(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID)
+	var worker = <-s.availableWorkers // maybe not necessary?
+
+	for worker == nil {
+		fmt.Println("got disconnected worker")
+		worker = <-s.availableWorkers
+	}
+
+	worker.SendParamsMessage(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID)
 
 	s.clientJobMap[worker.Connection] = HyperoptRecieveNextParamsResponse.ParamsID
 	s.trainingIdStateMap[HyperoptRecieveNextParamsResponse.ParamsID] = TrainingRun{
@@ -192,4 +325,10 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 	}
 
 	s.MasterClient.SendClientStartedTrainingMessage(worker, HyperoptRecieveNextParamsResponse.ParamsID, HyperoptRecieveNextParamsResponse.Params, time.Now().UnixMilli())
+}
+
+func (s *SocketServer) onRecievedClientReadyToTrain(conn *websocket.Conn, message []byte) {
+	s.WorkerClients[conn].Status = Idle
+	s.MasterClient.SendClientReadyToTrainMessage(s.WorkerClients[conn])
+	s.availableWorkers <- s.WorkerClients[conn]
 }

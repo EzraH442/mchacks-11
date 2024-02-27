@@ -28,7 +28,6 @@ func (c *MasterClient) Listen(s *SocketServer) {
 		if messageType == websocket.CloseMessage {
 			// TODO: Handle master client disconnect
 			break
-			break
 		}
 
 		m := Message{}

@@ -14,6 +14,7 @@ const (
 	ClientFinishedTrainingMessageID = "client-finished-training"
 	ClientStartedTrainingMessageID  = "client-started-training"
 	TrainingCompletedMessageID      = "training-completed"
+	ReadyToTrainMessageID           = "ready-to-train"
 )
 
 type Worker struct {
@@ -52,9 +53,20 @@ type ClientFinishedTrainingMessage struct {
 	FinishedAt   int64   `json:"time_finished"`
 }
 
+type ClientReadyToTrainMessage struct {
+	ID       string `json:"id"`
+	WorkerID string `json:"worker_id"`
+}
+
 type GetAllClientsMessage struct {
 	ID      string   `json:"id"`
 	Workers []Worker `json:"workers"`
+}
+
+type UploadFilesMessage struct {
+	ModelFileId      string `json:"model_file_id"`
+	TrainingFileId   string `json:"training_file_id"`
+	EvlauationFileId string `json:"evaluation_file_id"`
 }
 
 func (c *MasterClient) SendPongMessage() {
@@ -77,6 +89,13 @@ func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
 			Status:   fmt.Sprint(worker.Status),
 			Name:     worker.Name,
 		},
+	})
+}
+
+func (c *MasterClient) SendClientReadyToTrainMessage(worker *WorkerClient) {
+	c.Connection.WriteJSON(ClientReadyToTrainMessage{
+		ID:       ReadyToTrainMessageID,
+		WorkerID: worker.ID.String(),
 	})
 }
 

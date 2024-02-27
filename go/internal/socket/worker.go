@@ -3,6 +3,7 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/google/uuid"
@@ -20,6 +21,7 @@ type ClientStatus int
 
 const (
 	Idle ClientStatus = iota
+	NotReady
 	Running
 )
 
@@ -36,9 +38,25 @@ type SendClientParamsMessage struct {
 	ParamsID string      `json:"params_id"`
 }
 
+type SendFilesMessage struct {
+	ID               string `json:"id"`
+	ModelFileID      string `json:"model_file_id"`
+	TrainingFileID   string `json:"training_file_id"`
+	EvaluationFileID string `json:"evaluation_file_id"`
+	ModelFile        []byte `json:"model_file"`
+	TrainingFile     []byte `json:"training_file"`
+	EvaluationFile   []byte `json:"evaluation_file"`
+}
+
 const (
 	SendClientParamsMessageID      = "send-params"
 	RecieveClientResultsResponseID = "recieve-results"
+	SendFileMessage                = "send-files"
+)
+
+const (
+	ReadyToTrainResponseId         = "ready-to-train"
+	RecieveParamsResultsResponseID = "recieve-params-results"
 )
 
 func NewWorker(connection *websocket.Conn) *WorkerClient {
@@ -80,6 +98,63 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 	}
 }
 
-func (c *WorkerClient) SendParams(params interface{}, paramsID string) {
+type RecieveParamsResultsResponse struct {
+	ID       string  `json:"id"`
+	ParamsId string  `json:"params_id"`
+	Loss     float64 `json:"loss"`
+}
+
+func (c *WorkerClient) SendParamsMessage(params interface{}, paramsID string) {
 	c.Connection.WriteJSON(SendClientParamsMessage{ID: SendClientParamsMessageID, Params: params, ParamsID: paramsID})
+}
+
+// janky way to send files but should work for testing
+func (c *WorkerClient) SendFiles(modelFileId, trainingFileId, evaluationFileId string) {
+	modelFile, err := readFile(modelFileId)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	trainingFile, err := readFile(trainingFileId)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	evaluationFile, err := readFile(evaluationFileId)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	modelFileBytes, err := io.ReadAll(modelFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	trainingFileBytes, err := io.ReadAll(trainingFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	evaluationFileBytes, err := io.ReadAll(evaluationFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	message := SendFilesMessage{
+		ID:               SendFileMessage,
+		ModelFileID:      modelFileId,
+		TrainingFileID:   trainingFileId,
+		EvaluationFileID: evaluationFileId,
+		ModelFile:        modelFileBytes,
+		TrainingFile:     trainingFileBytes,
+		EvaluationFile:   evaluationFileBytes,
+	}
+
+	c.Connection.WriteJSON(message)
 }

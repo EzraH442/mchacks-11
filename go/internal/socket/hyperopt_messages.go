@@ -18,9 +18,9 @@ type HyperoptStartOptimizationMessage struct {
 }
 
 type HyperoptSendResultsMessage struct {
-	ID       string      `json:"id"`
-	ParamsID string      `json:"params_id"`
-	Results  interface{} `json:"results"`
+	ID       string  `json:"id"`
+	ParamsID string  `json:"params_id"`
+	Loss     float64 `json:"loss"`
 }
 
 func (c *HyperoptClient) SendInitMessage(searchSpace interface{}, initialBestConfig interface{}) {
@@ -37,11 +37,11 @@ func (c *HyperoptClient) SendStartOptimizationMessage() {
 	})
 }
 
-func (c *HyperoptClient) SendResultsMessage(results interface{}, paramsID string) {
+func (c *HyperoptClient) SendResultsMessage(paramsID string, loss float64) {
 	c.Connection.WriteJSON(HyperoptSendResultsMessage{
 		ID:       HyperoptSendResultsMessageID,
 		ParamsID: paramsID,
-		Results:  results,
+		Loss:     loss,
 	})
 }
 
