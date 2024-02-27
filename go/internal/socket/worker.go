@@ -69,7 +69,15 @@ func NewWorker(connection *websocket.Conn) *WorkerClient {
 }
 
 func (c *WorkerClient) Listen(s *SocketServer) {
+	if s.Trace {
+		log.Printf("Worker client (%s) connected\n", c.Name)
+	}
+
 	for {
+		if s.Trace {
+			log.Printf("Reading message from worker client (%s)\n", c.Name)
+		}
+
 		messageType, message, err := c.Connection.ReadMessage()
 
 		if err != nil {
@@ -78,6 +86,10 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 		}
 
 		if messageType == websocket.CloseMessage {
+			if s.Trace {
+				log.Printf("Worker client (%s) disconnected\n", c.Name)
+			}
+
 			s.onWorkerDisconnect(c.Connection)
 			break
 		}
@@ -89,9 +101,17 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 			continue
 		}
 
+		if s.Trace {
+			log.Printf("Received message from worker client (%s): %s\n", c.Name, m.ID)
+		}
+
 		if s.workerHandlers[m.ID] == nil {
 			log.Printf("Unrecognized message ID: %s\n", m.ID)
 			continue
+		}
+
+		if s.Trace {
+			log.Printf("Handling message from worker client (%s): %s\n", c.Name, m.ID)
 		}
 
 		go s.hyperoptHandlers[m.ID](c.Connection, message)

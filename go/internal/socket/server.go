@@ -43,6 +43,16 @@ type SocketServer struct {
 	modelFileId      string
 	trainingFileId   string
 	evaluationFileId string
+
+	Trace bool
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Accepting all requests
+	},
 }
 
 func (s *SocketServer) masterHandler(w http.ResponseWriter, r *http.Request) {
@@ -120,6 +130,9 @@ func readFile(id string) (*os.File, error) {
 }
 
 func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
+	//set cors headero
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -184,11 +197,25 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(UploadFilesMessage)
 }
 
-func (s *SocketServer) Start() error {
+func (s *SocketServer) Start(clean bool) error {
 	// create uploads folder if not exists
 	err := os.MkdirAll("uploads", os.ModePerm)
 	if err != nil {
 		return err
+	}
+
+	// if clean, remove all files in uploads folder
+	if clean {
+		files, err := os.ReadDir("uploads")
+		if err != nil {
+			return err
+		}
+		for _, file := range files {
+			err := os.Remove("uploads/" + file.Name())
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	http.HandleFunc("/master", s.masterHandler)
@@ -224,6 +251,7 @@ func NewSocketServer() *SocketServer {
 	s.workerHandlers[ReadyToTrainResponseId] = s.onRecievedClientReadyToTrain
 	s.workerHandlers[RecieveParamsResultsResponseID] = s.onRecievedTrainingResults
 
+	s.Trace = true // default verbose logging info
 	return s
 }
 

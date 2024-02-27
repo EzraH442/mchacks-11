@@ -7,7 +7,7 @@ import (
 
 func main() {
 	socketServer := socket.NewSocketServer()
-	err := socketServer.Start()
+	err := socketServer.Start(true)
 
 	fmt.Println(err)
 }
