@@ -14,7 +14,8 @@ const (
 	ClientFinishedTrainingMessageID = "client-finished-training"
 	ClientStartedTrainingMessageID  = "client-started-training"
 	TrainingCompletedMessageID      = "training-completed"
-	ReadyToTrainMessageID           = "ready-to-train"
+	ClientReadyToTrainMessageID     = "ready-to-train"
+	ClientNotReadyToTrainMessageID  = "not-ready-to-train"
 )
 
 type Worker struct {
@@ -94,7 +95,7 @@ func (c *MasterClient) SendClientConnectedMessage(worker *WorkerClient) {
 
 func (c *MasterClient) SendClientReadyToTrainMessage(worker *WorkerClient) {
 	c.Connection.WriteJSON(ClientReadyToTrainMessage{
-		ID:       ReadyToTrainMessageID,
+		ID:       ClientReadyToTrainMessageID,
 		WorkerID: worker.ID.String(),
 	})
 }
@@ -128,6 +129,13 @@ func (c *MasterClient) SendClientDisconnectedMessage(worker *WorkerClient) {
 			Status:   fmt.Sprint(worker.Status),
 			Name:     worker.Name,
 		},
+	})
+}
+
+func (c *MasterClient) SendClientNotReadyToTrainMessage(worker *WorkerClient) {
+	c.Connection.WriteJSON(ClientReadyToTrainMessage{
+		ID:       ClientNotReadyToTrainMessageID,
+		WorkerID: worker.ID.String(),
 	})
 }
 

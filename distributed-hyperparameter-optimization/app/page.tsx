@@ -151,7 +151,7 @@ function App() {
                   </CardHeader>
                   <CardContent>
                     {Array.from(training.workers.entries()).map(([k, v]) => (
-                      <ClientCard key={k} client={v} />
+                      <ClientCard key={k} clientId={v.id} />
                     ))}
                     {/* Not sure if this will look good with the client cards in it */}
                   </CardContent>

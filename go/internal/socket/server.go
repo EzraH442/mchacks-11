@@ -220,6 +220,18 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(UploadFilesMessage)
+
+	// invalidate all workers
+
+	for _, worker := range s.WorkerClients {
+		worker.Status = NotReady
+		s.MasterClient.SendClientNotReadyToTrainMessage(worker)
+	}
+
+	// send files to all workers
+	for _, worker := range s.WorkerClients {
+		worker.SendFiles(modelFileId, trainingFileId, evaluationFileId)
+	}
 }
 
 func (s *SocketServer) Start(clean bool) error {

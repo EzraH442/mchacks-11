@@ -14,6 +14,8 @@ export function formatStatus(status: EClientStatus) {
   switch (status) {
     case EClientStatus.IDLE:
       return 'Idle';
+    case EClientStatus.NOT_READY:
+      return 'Not Ready';
     case EClientStatus.WORKING:
       return 'Working';
     case EClientStatus.DISCONNECTED:

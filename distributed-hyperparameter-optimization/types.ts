@@ -6,6 +6,7 @@ export enum EResultsStatus {
 
 export enum EClientStatus {
   IDLE = 'idle',
+  NOT_READY = 'not-ready',
   WORKING = 'working',
   DISCONNECTED = 'disconnected',
 }

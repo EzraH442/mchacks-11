@@ -44,6 +44,18 @@ const WorkerBatchMapEntry = types.model('WorkerBatchMapEntry', {
   batchId: types.string,
 });
 
+const determineStatus = (status: string) => {
+  switch (status) {
+    case '0':
+      return EClientStatus.IDLE;
+    case '1':
+      return EClientStatus.NOT_READY;
+    case '2':
+      return EClientStatus.WORKING;
+  }
+  throw new Error('Invalid status');
+};
+
 export const Training = types
   .model('Training', {
     workers: WorkerMap,
@@ -67,7 +79,7 @@ export const Training = types
         id: worker.worker_id,
         name: worker.name,
         ip: worker.ip,
-        status: EClientStatus.IDLE,
+        status: determineStatus(worker.status),
         currentTask: {},
       });
     },
@@ -77,7 +89,7 @@ export const Training = types
           id: worker.worker_id,
           name: worker.name,
           ip: worker.ip,
-          status: EClientStatus.IDLE,
+          status: determineStatus(worker.status),
           currentTask: {},
         });
       });
@@ -118,6 +130,13 @@ export const Training = types
     },
     setFinishedTraining() {
       self.currentlyTraining = false;
+    },
+    updateWorkerStatus(workerId: string, status: EClientStatus) {
+      const worker = self.workers.get(workerId);
+      if (worker) {
+        console.log('updating worker status', workerId, status);
+        worker.status = status;
+      }
     },
   }));
 

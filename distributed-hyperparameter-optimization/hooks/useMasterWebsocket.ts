@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
-import { EHyperparameterParameterType } from '@/types';
+import { EClientStatus, EHyperparameterParameterType } from '@/types';
 import { useStore } from '@/store';
 import * as g from '@/auto-generated';
 import { IOptions, IQUniform, IUniform } from '@/models/StagingArea';
@@ -71,14 +71,31 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
 
         case g.ClientStartedTrainingMessageID: {
           training.addTrainingBatch(data as g.ClientStartedTrainingMessage);
+          break;
+        }
+
+        case g.ClientReadyToTrainMessageID: {
+          const d: g.ClientReadyToTrainMessage =
+            data as g.ClientReadyToTrainMessage;
+          training.updateWorkerStatus(d.worker_id, EClientStatus.IDLE);
+          break;
+        }
+
+        case g.ClientNotReadyToTrainMessageID: {
+          const d: g.ClientReadyToTrainMessage =
+            data as g.ClientReadyToTrainMessage;
+          training.updateWorkerStatus(d.worker_id, EClientStatus.NOT_READY);
+          break;
         }
 
         case g.ClientFinishedTrainingMessageID: {
           training.finishTrainingBatch(data as g.ClientFinishedTrainingMessage);
+          break;
         }
 
         case g.TrainingCompletedMessageID: {
           training.setFinishedTraining();
+          break;
         }
       }
 

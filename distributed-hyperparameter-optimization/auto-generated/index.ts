@@ -10,7 +10,8 @@ export const AllClientsMessageID = "get-all-clients";
 export const ClientFinishedTrainingMessageID = "client-finished-training";
 export const ClientStartedTrainingMessageID = "client-started-training";
 export const TrainingCompletedMessageID = "training-completed";
-export const ReadyToTrainMessageID = "ready-to-train";
+export const ClientReadyToTrainMessageID = "ready-to-train";
+export const ClientNotReadyToTrainMessageID = "not-ready-to-train";
 export interface Worker {
   worker_id: string /* uuid */;
   ip: string;
