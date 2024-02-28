@@ -373,6 +373,7 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 		worker = <-s.availableWorkers
 	}
 
+	fmt.Printf("worker is %+v", worker)
 	worker.SendParamsMessage(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID)
 
 	s.clientJobMap[worker.Connection] = HyperoptRecieveNextParamsResponse.ParamsID

@@ -43,9 +43,9 @@ type SendFilesMessage struct {
 	ModelFileID      string `json:"model_file_id"`
 	TrainingFileID   string `json:"training_file_id"`
 	EvaluationFileID string `json:"evaluation_file_id"`
-	ModelFile        []byte `json:"model_file"`
-	TrainingFile     []byte `json:"training_file"`
-	EvaluationFile   []byte `json:"evaluation_file"`
+	ModelFile        string `json:"model_file"`
+	TrainingFile     string `json:"training_file"`
+	EvaluationFile   string `json:"evaluation_file"`
 }
 
 const (
@@ -167,9 +167,9 @@ func (c *WorkerClient) SendFiles(modelFileId, trainingFileId, evaluationFileId s
 		ModelFileID:      modelFileId,
 		TrainingFileID:   trainingFileId,
 		EvaluationFileID: evaluationFileId,
-		ModelFile:        modelFileBytes,
-		TrainingFile:     trainingFileBytes,
-		EvaluationFile:   evaluationFileBytes,
+		ModelFile:        string(modelFileBytes),
+		TrainingFile:     string(trainingFileBytes),
+		EvaluationFile:   string(evaluationFileBytes),
 	}
 
 	c.Connection.WriteJSON(message)
