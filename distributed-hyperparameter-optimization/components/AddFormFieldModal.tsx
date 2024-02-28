@@ -159,6 +159,9 @@ const AddFormFieldModal: React.FC<AddFormFieldModalProps> = ({ onSubmit }) => {
                     <SelectItem value={EHyperparameterDataType.BOOL}>
                       bool
                     </SelectItem>
+                    <SelectItem value={EHyperparameterDataType.PYTHON_FUNCTION}>
+                      python function
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </FormItem>

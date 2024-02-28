@@ -4,16 +4,31 @@ import websocket
 import json
 import time
 import messages
+import tensorflow as tf
 
 server = "ws://localhost:8080"
 
 SendClientParamsMessageID = "send-params"
 SendFileMessage = "send-files"
 
+
 websocket.enableTrace(True)
 logging.basicConfig(
     filename="worker.log", level=logging.INFO, format="%(asctime)s: %(message)s"
 )
+
+
+def build_training_params(params: dict, v_table):
+    ret = {}
+
+    for k, v in params.items():
+        if v in v_table:
+            print(f"Eval: {v}")
+            ret[k] = eval(v)
+        else:
+            ret[k] = v
+
+    return ret
 
 
 class Worker:
@@ -92,11 +107,16 @@ class Worker:
         self.ws_connection.send(messages.create_ready_to_train_message())
 
     def send_params_handler(self, data):
+        logging.info(f"Received Params: {data}")
         params_id = data["params_id"]
         params = data["params"]
+        v_table = data["v_table"]
 
-        # train and evaluatethe model
-        model = eval(self.training_file)(params)
+        # train and evaluate the model
+        p = build_training_params(params, v_table)
+
+        logging.info(f"Training with Params: {p}")
+        model = eval(self.training_file)(p)
         loss = eval(self.training_file)(model)
 
         self.ws_connection.send(

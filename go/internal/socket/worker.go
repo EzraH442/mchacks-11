@@ -36,6 +36,7 @@ type SendClientParamsMessage struct {
 	ID       string      `json:"id"`
 	Params   interface{} `json:"params"`
 	ParamsID string      `json:"params_id"`
+	VTable   interface{} `json:"v_table"`
 }
 
 type SendFilesMessage struct {
@@ -120,8 +121,8 @@ type RecieveParamsResultsResponse struct {
 	Loss     float64 `json:"loss"`
 }
 
-func (c *WorkerClient) SendParamsMessage(params interface{}, paramsID string) {
-	c.Connection.WriteJSON(SendClientParamsMessage{ID: SendClientParamsMessageID, Params: params, ParamsID: paramsID})
+func (c *WorkerClient) SendParamsMessage(params interface{}, paramsID string, vTable interface{}) {
+	c.Connection.WriteJSON(SendClientParamsMessage{ID: SendClientParamsMessageID, Params: params, ParamsID: paramsID, VTable: vTable})
 }
 
 // janky way to send files but should work for testing

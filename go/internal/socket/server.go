@@ -385,7 +385,7 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 		worker = <-s.availableWorkers
 	}
 
-	worker.SendParamsMessage(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID)
+	worker.SendParamsMessage(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID, HyperoptRecieveNextParamsResponse.VTable)
 
 	s.clientJobMap[worker.Connection] = HyperoptRecieveNextParamsResponse.ParamsID
 	s.trainingIdStateMap[HyperoptRecieveNextParamsResponse.ParamsID] = TrainingRun{

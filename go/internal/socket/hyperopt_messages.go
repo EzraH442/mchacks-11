@@ -49,4 +49,5 @@ type HyperoptRecieveNextParamsResponse struct {
 	ID       string      `json:"id"`
 	ParamsID string      `json:"params_id"`
 	Params   interface{} `json:"params"`
+	VTable   interface{} `json:"v_table"`
 }

@@ -20,6 +20,8 @@ const determineDefaultChoiceValue = (type: EHyperparameterDataType) => {
       return true;
     case EHyperparameterDataType.TEXT:
       return '';
+    case EHyperparameterDataType.PYTHON_FUNCTION:
+      return 'tf.keras.optimizers.Adam';
   }
 };
 
@@ -80,10 +82,7 @@ const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
     const ss = hp?.searchSpace as IOptions;
 
     const getDivStyle = () => {
-      if (
-        type === EHyperparameterDataType.NUMBER ||
-        type === EHyperparameterDataType.TEXT
-      ) {
+      if (type !== EHyperparameterDataType.BOOL) {
         return 'flex space-x-2 my-1';
       } else {
         return 'flex justify-between my-1 space-y-0';
@@ -95,6 +94,8 @@ const ChoiceSearchSpace: React.FC<IChoiceSearchSpaceProps> = observer(
         case EHyperparameterDataType.NUMBER:
           return <InputNumberChoice option={option} />;
         case EHyperparameterDataType.TEXT:
+          return <InputStringChoice option={option} />;
+        case EHyperparameterDataType.PYTHON_FUNCTION:
           return <InputStringChoice option={option} />;
         case EHyperparameterDataType.BOOL:
           return <InputBoolChoice option={option} />;

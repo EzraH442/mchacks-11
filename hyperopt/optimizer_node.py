@@ -1,5 +1,5 @@
 import time
-from hyperopt import Trials, fmin, tpe
+from hyperopt import Trials, fmin, tpe, hp
 import json
 import websocket
 import uuid
@@ -18,18 +18,39 @@ def create_ws_message(message_id, data):
     return json.dumps(message)
 
 
-def create_push_opt_params_message(params, params_id):
-    p = {"params": params, "params_id": params_id}
+def create_push_opt_params_message(params, params_id, vtable):
+    p = {"params": params, "params_id": params_id, "v_table": vtable}
     return create_ws_message("push-opt-params", p)
 
 
 server = "ws://localhost:8080"
 
 
+def create_search_space_from_params(params):
+    space = {}
+    vtable = list()
+    for k, v in params.items():
+        if k == "_v_table":
+            for vtable_key, vtable_value in v.items():
+                vtable.append(vtable_key)
+            continue
+        if v["type"] == "choice":
+            # names of python functions will get mapped to the actual function in each worker node
+            space[k] = hp.choice(k, v["options"])
+        if v["type"] == "uniform":
+            if v["dataType"] == "int":
+                space[k] = hp.uniform(k, v["min"], v["max"])
+        if v["type"] == "quniform":
+            if v["dataType"] == "int":
+                space[k] = hp.quniform(k, v["min"], v["max"], v["q"])
+    return space, vtable
+
+
 class Optimizer:
     def __init__(self) -> None:
         print("Optimizer Created")
         self.search_space = None
+        self.v_table = None
         self.initial_best_config = None
         self.training_history = []
         self.ws_connection = self.create_connection()
@@ -63,7 +84,7 @@ class Optimizer:
             f"Initializing Search Space: {space}, and initial best config: {initial_best_config}"
         )
 
-        self.search_space = space
+        self.search_space, self.v_table = create_search_space_from_params(space)
         self.initial_best_config = initial_best_config
 
         self.start_optimization_handler()
@@ -100,7 +121,9 @@ class Optimizer:
 
         params_id = uuid.uuid4().hex
         self.results_map[params_id] = None
-        self.ws_connection.send(create_push_opt_params_message(params, params_id))
+        self.ws_connection.send(
+            create_push_opt_params_message(params, params_id, self.v_table)
+        )
 
         while self.results_map[params_id] is None:
             time.sleep(1)

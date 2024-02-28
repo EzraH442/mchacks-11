@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 import { useToast } from '../components/ui/use-toast';
-import { EClientStatus, EHyperparameterParameterType } from '@/types';
+import {
+  EClientStatus,
+  EHyperparameterDataType,
+  EHyperparameterParameterType,
+} from '@/types';
 import { useStore } from '@/store';
 import * as g from '@/auto-generated';
 import { IOptions, IQUniform, IUniform } from '@/models/StagingArea';
@@ -104,22 +108,31 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
   });
 
   const sendInitialParametersMessage = () => {
-    const initialParameters = store.stagingArea.hyperparameters;
     const searchSpace = store.stagingArea.hyperparameters;
 
     const search_space: Record<string, any> = {};
+    const v_table: Record<string, boolean> = {};
     const initial_params: Record<string, any> = {};
 
     Array.from(searchSpace.entries()).forEach(([k, v]) => {
       let ss: any;
 
+      ss = {
+        type: v.parameterType,
+        dataType: v.dataType,
+      };
+
       switch (v.parameterType) {
         case EHyperparameterParameterType.CHOICE: {
-          ss = [];
+          const options: any[] = [];
 
           Array.from((v.searchSpace as IOptions).optionMap.values()).map(
             ({ id, value }, i) => {
-              ss.push(value);
+              if (v.dataType === EHyperparameterDataType.PYTHON_FUNCTION) {
+                v_table[value] = true;
+              }
+
+              options.push(value);
 
               if (v.searchSpace.selectedValue === id) {
                 initial_params[v.name] = i;
@@ -127,32 +140,30 @@ const useMasterWebSocket = (params: IUserMasterWebSocket) => {
             },
           );
 
+          ss.options = options;
           break;
         }
 
         case EHyperparameterParameterType.UNIFORM: {
           const _ss = v.searchSpace as IUniform;
-          ss = {
-            min: _ss.min,
-            max: _ss.max,
-          };
+          ss.min = _ss.min;
+          ss.max = _ss.max;
           initial_params[v.name] = v.searchSpace.selectedValue;
           break;
         }
 
         case EHyperparameterParameterType.QUNIFORM: {
           const _ss = v.searchSpace as IQUniform;
-          ss = {
-            min: _ss.min,
-            max: _ss.max,
-            q: _ss.q,
-          };
+          ss.min = _ss.min;
+          ss.max = _ss.max;
+          ss.q = _ss.q;
           initial_params[v.name] = v.searchSpace.selectedValue;
           break;
         }
       }
 
       search_space[v.name] = ss;
+      search_space['_v_table'] = v_table;
     });
 
     const message: g.InitiateTrainingResponse = {

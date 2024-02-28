@@ -21,6 +21,7 @@ export enum EHyperparameterDataType {
   BOOL = 'bool',
   NUMBER = 'number',
   TEXT = 'text',
+  PYTHON_FUNCTION = 'python_function',
 }
 
 export interface IAddFormField {
@@ -100,13 +101,13 @@ export const DefaultFormProps: IAddFormField[] = [
   {
     fieldName: 'optimizer_function',
     hpType: EHyperparameterParameterType.CHOICE,
-    type: EHyperparameterDataType.TEXT,
+    type: EHyperparameterDataType.PYTHON_FUNCTION,
     array: false,
   },
   {
     fieldName: 'loss_function',
     hpType: EHyperparameterParameterType.CHOICE,
-    type: EHyperparameterDataType.TEXT,
+    type: EHyperparameterDataType.PYTHON_FUNCTION,
     array: false,
   },
   {
