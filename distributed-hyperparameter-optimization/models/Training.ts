@@ -98,9 +98,18 @@ export const Training = types
       self.workers.delete(workerId);
     },
     addTrainingBatch(m: g.ClientStartedTrainingMessage) {
+      const parameters: Record<string, IHyperparameterSetEntry> = {};
+
+      Object.entries(m.parameters).forEach(([key, value]) => {
+        parameters[key] = {
+          name: key,
+          value,
+        };
+      });
+
       self.batches.set(m.parameters_id, {
         id: m.parameters_id,
-        hyperparameterSet: m.parameters,
+        hyperparameterSet: parameters,
         status: EResultsStatus.IN_PROGRESS,
         timeStarted: m.time_started,
       });
@@ -110,9 +119,11 @@ export const Training = types
         workerId: m.worker_id,
         batchId: m.parameters_id,
       });
+      self.workers.get(m.worker_id)?.setStatus(EClientStatus.WORKING);
     },
     finishTrainingBatch(m: g.ClientFinishedTrainingMessage) {
       const id = `${m.parameters_id}-${m.worker_id}`;
+      self.workers.get(m.worker_id)?.setStatus(EClientStatus.IDLE);
       self.workerBatchMap.delete(id);
       const batch = self.batches.get(m.parameters_id);
       if (batch) {
@@ -134,8 +145,7 @@ export const Training = types
     updateWorkerStatus(workerId: string, status: EClientStatus) {
       const worker = self.workers.get(workerId);
       if (worker) {
-        console.log('updating worker status', workerId, status);
-        worker.status = status;
+        worker.setStatus(status);
       }
     },
   }));

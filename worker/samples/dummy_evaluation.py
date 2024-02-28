@@ -1,5 +1,2 @@
-import model
-
-
-def evaluate_model(model: model.DQNModel):
+def evaluate_model(model):
     return -1

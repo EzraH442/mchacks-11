@@ -109,6 +109,7 @@ class Optimizer:
             space=self.search_space,
             points_to_evaluate=[self.initial_best_config],
             algo=tpe.suggest,  # Optimization algorithm (representative TPE)
+            max_queue_len=3,  # Number of parallel workers
             # max_evals=3,  # Number of optimization attempts
             # trials=self.training_history,  # Record the results
             # trials_save_file="./pacman_trials.p",

@@ -1,5 +1,6 @@
 import { observer } from 'mobx-react-lite';
 import { useStore } from '@/store';
+import { formatValues } from '@/lib/utils';
 
 interface IHyperparamsViewProps {
   batchId: string;
@@ -22,16 +23,11 @@ const HyperparametersView: React.FC<IHyperparamsViewProps> = observer(
         className={`flex flex-col px-1.5 py-1 rounded-md
     ${pending ? 'bg-yellow-200' : 'bg-gray-100'}`}
       >
-        {/* <TypographyP className="">Layers: {hyperparameters.layers}</TypographyP>
-        <TypographyP className="">
-          Neurons per layer: {hyperparameters.neuronsPerLayer.join(', ')}
-        </TypographyP>
-        <TypographyP className="">
-          Epsilon: {round(hyperparameters.epsilon, 3)}
-        </TypographyP>
-        <TypographyP className="">
-          Learning rate: {round(hyperparameters.learningRate, 3)}
-        </TypographyP> */}
+        {Array.from(batch.hyperparameterSet.entries()).map(([k, v]) => (
+          <div key={k} className="flex justify-between">
+            <p>{`${k}: ${formatValues(v.value)}`}</p>
+          </div>
+        ))}
       </div>
     );
   },
