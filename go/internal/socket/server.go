@@ -100,9 +100,7 @@ func (s *SocketServer) hyperoptHandler(w http.ResponseWriter, r *http.Request) {
 		return conn.NetConn().Close()
 	})
 	s.HyperoptClient.Listen(s)
-	// clean up
 	s.HyperoptClient = nil
-	s.HyperoptClient.Connection.Close()
 }
 
 func (s *SocketServer) workerHandler(w http.ResponseWriter, r *http.Request) {
@@ -296,6 +294,7 @@ func NewSocketServer() *SocketServer {
 
 	s.workerHandlers[ReadyToTrainResponseId] = s.onRecievedClientReadyToTrain
 	s.workerHandlers[RecieveParamsResultsResponseID] = s.onRecievedTrainingResults
+	s.workerHandlers[RecieveTrainingFailedResponseID] = s.onRecievedTrainingFailed
 
 	return s
 }
@@ -409,4 +408,13 @@ func (s *SocketServer) onHyperoptDisconnect(conn *websocket.Conn) {
 
 func (s *SocketServer) onMasterDisconnect(conn *websocket.Conn) {
 	s.MasterClient = nil
+}
+
+func (s *SocketServer) onRecievedTrainingFailed(conn *websocket.Conn, message []byte) {
+	res := RecieveTrainingFailedResponse{}
+	json.Unmarshal(message, &res)
+	log.Printf("Training failed for params_id: %s\nStack trace: %s", res.ParamsId, res.Error)
+
+	// run := s.trainingIdStateMap[res.ParamsId]
+	// do something to handle errors
 }

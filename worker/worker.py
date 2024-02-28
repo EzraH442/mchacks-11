@@ -5,6 +5,7 @@ import json
 import time
 import messages
 import tensorflow as tf
+import traceback
 
 server = "ws://localhost:8080"
 
@@ -113,25 +114,33 @@ class Worker:
         v_table = data["v_table"]
 
         # train and evaluate the model
-        p = build_training_params(params, v_table)
+        try:
+            p = build_training_params(params, v_table)
 
-        logging.info(f"Training with Params: {p}")
+            logging.info(f"Training with Params: {p}")
 
-        scope = {}
-        logging.info(f"Exec {self.training_file}")
-        exec(self.training_file, scope)
-        model = scope["train_model"](p)
-        logging.info(f"Model Trained")
+            scope = {}
+            logging.info(f"Exec:\n{self.training_file}")
+            exec(self.training_file, scope)
+            model = scope["train_model"](p)
+            logging.info(f"Model Trained")
 
-        logging.info("Evaluating model...")
-        logging.info(f"Exec {self.evaluation_file}")
-        exec(self.evaluation_file, scope)
-        loss = scope["evaluate_model"](model)
-        logging.info(f"Loss: {loss}")
+            logging.info("Evaluating model...")
+            logging.info(f"Exec:\n{self.evaluation_file}")
+            exec(self.evaluation_file, scope)
+            loss = scope["evaluate_model"](model)
+            logging.info(f"Loss: {loss}")
 
-        self.ws_connection.send(
-            messages.create_recieve_results_message(params_id, loss)
-        )
+            self.ws_connection.send(
+                messages.create_recieve_results_message(params_id, loss)
+            )
+        except Exception as e:
+            logging.error(f"Error: {traceback.format_exc()}")
+            self.ws_connection.send(
+                messages.create_recieve_training_failed_message(
+                    params_id, traceback.format_exc()
+                )
+            )
 
     def on_open(self, ws):
         logging.info("Connection Opened")

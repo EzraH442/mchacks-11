@@ -218,9 +218,9 @@ export const DefaultSearchSpace: ISearchSpaceFormProps[] = [
   {
     fieldName: 'conv_layers',
     options: [
-      [32, 8, [4, 4]],
-      [64, 4, [2, 2]],
-      [64, 3, [1, 1]],
+      [[32, 8, [4, 4]]],
+      [[64, 4, [2, 2]]],
+      [[64, 3, [1, 1]]],
     ],
   },
   {
@@ -368,7 +368,7 @@ initial_best_config = [{
  */
 
 export const DefaultInitialPoint: any = {
-  conv_layers: [32, 8, [4, 4]],
+  conv_layers: [[32, 8, [4, 4]]],
   num_units_per_dense_layer: [512],
   activation: 'relu',
   kernel_initializer: 'glorot_uniform',

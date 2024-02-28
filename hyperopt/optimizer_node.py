@@ -4,6 +4,8 @@ import json
 import websocket
 import uuid
 import logging
+import threading
+import traceback
 
 websocket.enableTrace(True)
 logging.basicConfig(
@@ -85,21 +87,22 @@ class Optimizer:
         self.search_space, self.v_table = create_search_space_from_params(space)
         self.initial_best_config = initial_best_config
 
-        self.start_optimization_handler()
+        t = threading.Thread(target=self.start_optimization_handler)
+        t.start()
 
     def get_results_handler(self, results):
         logging.debug(f"Received Results: {results}")
 
         params_id = results["params_id"]
         loss = results["loss"]
-        params = results["params"]
 
-        self.results_map[params_id] = (params, loss)
+        self.results_map[params_id] = loss
 
     def start_optimization_handler(self):
         logging.info("Starting Optimization")
 
-        print("fmit")
+        print("fmin")
+
         best = fmin(
             fn=self.objective,  # Objective Function to optimize
             verbose=True,
@@ -124,10 +127,11 @@ class Optimizer:
         )
 
         while self.results_map[params_id] is None:
+            logging.info("waiting...")
             time.sleep(1)
 
         logging.info(f"objective function completed for params: {params}")
-        params, loss = self.results_map[params_id]
+        loss = self.results_map[params_id]
         return loss
 
     def message_handler(self, other, message):
@@ -143,7 +147,7 @@ class Optimizer:
             self.init_handler(data["search_space"], data["initial_best_config"])
 
         elif data["id"] == "results":
-            self.get_results_handler(data["results"])
+            self.get_results_handler(data)
 
         elif data["id"] == "start-optimization":
             self.start_optimization_handler()

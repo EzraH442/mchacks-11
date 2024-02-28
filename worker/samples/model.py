@@ -301,7 +301,7 @@ class DQNModel:
             # print("Memory Filling: ", i, " of ", self.memory_size)
             # clear_output(wait=True)
             action = self.env.action_space.sample()
-            next_state, reward, terminated, info = self.env.step(action)
+            next_state, reward, terminated, truncated, info = self.env.step(action)
             np.append(frames, next_state)
             next_state = copy.deepcopy(frames[-4:])
             experience = (
@@ -434,7 +434,7 @@ class DQNModel:
             action = self.generate_action_epsilon_greedy(initial_Q)
             max_Q += initial_Q[action]
 
-            next_state, reward, terminated, info = self.env.step(action)
+            next_state, reward, terminated, truncated, info = self.env.step(action)
             np.append(frames, next_state)
             next_state = copy.deepcopy(frames[-4:])
             experience = (
@@ -488,110 +488,6 @@ class DQNModel:
             stat_average_Q[i] = average_Q
             stat_max_Q[i] = max_Q
 
-            if i % 1 == 0 and i != 0:
-                # if i % (float(self.num_episodes) / 20) == 0 and i != 0:
-                self.export()
-
-                x = range(1 + self.start_episode, i + 2 + self.start_episode)
-                games = range(1, i + 2)
-                fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 10))
-                # fig.set_figure(figsize=(12, 20))
-                # ax1 = plt.subplot(1, 1)
-                # plt.tick_params("x", labelbottom=False)
-                # ax1 = plt.subplot(2, 1)
-                ax1.set_xticks(
-                    np.arange(
-                        self.start_episode,
-                        self.num_episodes + 1 + self.start_episode,
-                        self.num_episodes / 20,
-                    )
-                )
-                # ax1.set_yticks(np.arange(-1, 1.1, 0.1))
-                ax1.plot(x, stat_reward[0 : i + 1], linestyle="solid")
-                ax1.set_xlim(self.start_episode, self.num_episodes + self.start_episode)
-                # ax1.set_ylim(-1, 1)
-                ax1.set_xlabel("Episodes")
-                ax1.set_ylabel("Reward")
-                ax1.set_title("Reward vs Episodes ({} vs Self)".format(self.model_name))
-
-                # ax2 = plt.subplot(2, 2)
-                ax2.set_xticks(
-                    np.arange(
-                        self.start_episode,
-                        self.num_episodes + 1 + self.start_episode,
-                        self.num_episodes / 20,
-                    )
-                )
-                # ax2.set_yticks(np.arange(-1, 1.1, 0.1))
-                ax2.plot(x, stat_max_Q[0 : i + 1], linestyle="solid")
-                ax2.plot(x, stat_average_Q[0 : i + 1], linestyle="solid")
-                ax2.set_xlim(self.start_episode, self.num_episodes + self.start_episode)
-                # plt.ylim(-2, 2)
-                ax2.set_xlabel("Episodes")
-                ax2.set_ylabel("Q")
-                ax2.set_title(
-                    "Average Q Per Episode vs Episodes ({} vs Self)".format(
-                        self.model_name
-                    )
-                )
-
-                if save_plots:
-                    # plt.savefig("plots/{}_{}_epochs.png".format(self.model_name, i))
-                    plt.savefig("plots/{}.png".format(self.model_name))
-                else:
-                    plt.show()
-
-                plt.close(fig)
-
-        x = range(1 + self.start_episode, i + 2 + self.start_episode)
-        games = range(1, i + 1)
-        fig, (ax1, ax2) = plt.subplots(2, figsize=(20, 10))
-        # fig.set_figure(figsize=(12, 20))
-        # ax1 = plt.subplot(1, 1)
-        # plt.tick_params("x", labelbottom=False)
-        # ax1 = plt.subplot(2, 1)
-        ax1.set_xticks(
-            np.arange(
-                self.start_episode,
-                self.num_episodes + 1 + self.start_episode,
-                self.num_episodes / 20,
-            )
-        )
-        # ax1.set_yticks(np.arange(-1, 1.1, 0.1))
-        ax1.plot(x, stat_reward, linestyle="solid")
-        ax1.set_xlim(self.start_episode, self.num_episodes + self.start_episode)
-        # ax1.set_ylim(-1, 1)
-        ax1.set_xlabel("Episodes")
-        ax1.set_ylabel("Reward")
-        ax1.set_title("Reward vs Episodes ({} vs Self)".format(self.model_name))
-
-        # ax2 = plt.subplot(2, 2)
-        ax2.set_xticks(
-            np.arange(
-                self.start_episode,
-                self.num_episodes + 1 + self.start_episode,
-                self.num_episodes / 20,
-            )
-        )
-        # ax2.set_yticks(np.arange(-1, 1.1, 0.1))
-        ax2.plot(x, stat_max_Q, linestyle="solid")
-        ax2.plot(x, stat_average_Q, linestyle="solid")
-        ax2.set_xlim(self.start_episode, self.num_episodes + self.start_episode)
-        # plt.ylim(-2, 2)
-        ax2.set_xlabel("Episodes")
-        ax2.set_ylabel("Q")
-        ax2.set_title(
-            "Average Q Per Episode vs Episodes ({} vs Self)".format(self.model_name)
-        )
-
-        if save_plots:
-            # plt.savefig("plots/{}_{}_epochs.png".format(self.model_name, i))
-            plt.savefig("plots/{}.png".format(self.model_name))
-        else:
-            plt.show()
-
-        self.export()
-        plt.close(fig)
         self.env.close()
 
     def play(self, num_games=1):

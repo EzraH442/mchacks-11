@@ -50,14 +50,14 @@ type SendFilesMessage struct {
 }
 
 const (
-	SendClientParamsMessageID      = "send-params"
-	RecieveClientResultsResponseID = "recieve-results"
-	SendFileMessage                = "send-files"
+	SendClientParamsMessageID = "send-params"
+	SendFileMessage           = "send-files"
 )
 
 const (
-	ReadyToTrainResponseId         = "ready-to-train"
-	RecieveParamsResultsResponseID = "recieve-params-results"
+	ReadyToTrainResponseId          = "ready-to-train"
+	RecieveParamsResultsResponseID  = "recieve-params-results"
+	RecieveTrainingFailedResponseID = "recieve-training-failed"
 )
 
 func NewWorker(connection *websocket.Conn) *WorkerClient {
@@ -119,6 +119,12 @@ type RecieveParamsResultsResponse struct {
 	ID       string  `json:"id"`
 	ParamsId string  `json:"params_id"`
 	Loss     float64 `json:"loss"`
+}
+
+type RecieveTrainingFailedResponse struct {
+	ID       string `json:"id"`
+	ParamsId string `json:"params_id"`
+	Error    string `json:"error"`
 }
 
 func (c *WorkerClient) SendParamsMessage(params interface{}, paramsID string, vTable interface{}) {

@@ -4,6 +4,7 @@ const (
 	HyperoptInitMessageID               = "init-hyperopt"
 	HyperoptStartOptimizationMessageID  = "start-optimization"
 	HyperoptSendResultsMessageID        = "results"
+	HyperoptTrainingFailedMessageID     = "training-failed"
 	HyperoptRecieveNextParamResponsesID = "push-opt-params"
 )
 
@@ -42,6 +43,18 @@ func (c *HyperoptClient) SendResultsMessage(paramsID string, loss float64) {
 		ID:       HyperoptSendResultsMessageID,
 		ParamsID: paramsID,
 		Loss:     loss,
+	})
+}
+
+type TrainingFailedMessage struct {
+	ID       string `json:"id"`
+	ParamsID string `json:"params_id"`
+}
+
+func (c *HyperoptClient) SendTrainingFailedMessage(paramsID string) {
+	c.Connection.WriteJSON(TrainingFailedMessage{
+		ID:       HyperoptTrainingFailedMessageID,
+		ParamsID: paramsID,
 	})
 }
 
