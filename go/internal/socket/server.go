@@ -102,9 +102,9 @@ func (s *SocketServer) workerHandler(w http.ResponseWriter, r *http.Request) {
 
 	client := NewWorker(conn)
 	s.WorkerClients[conn] = client
+	s.MasterClient.SendClientConnectedMessage(client)
 	client.SendFiles(s.modelFileId, s.trainingFileId, s.evaluationFileId)
 	client.Listen(s)
-	conn.Close()
 }
 
 const MAX_UPLOAD_SIZE = 1024 * 1024 * 50 // 50 MB
@@ -187,6 +187,10 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.modelFileId = modelFileId
+	s.trainingFileId = trainingFileId
+	s.evaluationFileId = evaluationFileId
+
 	UploadFilesMessage := UploadFilesMessage{
 		ModelFileId:      modelFileId,
 		TrainingFileId:   trainingFileId,
@@ -220,7 +224,7 @@ func (s *SocketServer) Start(clean bool) error {
 
 	http.HandleFunc("/master", s.masterHandler)
 	http.HandleFunc("/hyperopt", s.hyperoptHandler)
-	http.HandleFunc("/", s.workerHandler)
+	http.HandleFunc("/worker", s.workerHandler)
 
 	http.HandleFunc("/upload", s.uploadHandler)
 	fmt.Println("Starting server on :8080")
@@ -253,13 +257,6 @@ func NewSocketServer() *SocketServer {
 
 	s.Trace = true // default verbose logging info
 	return s
-}
-
-func (s *SocketServer) onWorkerConnect(conn *websocket.Conn) {
-	c := NewWorker(conn)
-	s.WorkerClients[conn] = c
-	s.availableWorkers <- c
-	s.MasterClient.SendClientConnectedMessage(c)
 }
 
 func (s *SocketServer) onWorkerDisconnect(conn *websocket.Conn) {
@@ -356,6 +353,9 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 }
 
 func (s *SocketServer) onRecievedClientReadyToTrain(conn *websocket.Conn, message []byte) {
+	if s.Trace {
+		fmt.Println("Recieved ReadyToTrainResponseId")
+	}
 	s.WorkerClients[conn].Status = Idle
 	s.MasterClient.SendClientReadyToTrainMessage(s.WorkerClients[conn])
 	s.availableWorkers <- s.WorkerClients[conn]

@@ -12,11 +12,14 @@ logging.basicConfig(
 
 
 def create_ws_message(message_id, data):
-    return json.dumps({"ID": message_id, "data": data})
+    message = {"ID": message_id}
+    for k, v in data.items():
+        message[k] = v
+    return json.dumps(message)
 
 
-def create_push_opt_params_message(params, id):
-    p = {"params": params, "id": id}
+def create_push_opt_params_message(params, params_id):
+    p = {"params": params, "params_id": params_id}
     return create_ws_message("push-opt-params", p)
 
 

@@ -61,7 +61,7 @@ const (
 
 func NewWorker(connection *websocket.Conn) *WorkerClient {
 	return &WorkerClient{
-		Status:     Idle,
+		Status:     NotReady,
 		ID:         uuid.New(),
 		Connection: connection,
 		Name:       ng.Generate(),
@@ -114,7 +114,7 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 			log.Printf("Handling message from worker client (%s): %s\n", c.Name, m.ID)
 		}
 
-		go s.hyperoptHandlers[m.ID](c.Connection, message)
+		go s.workerHandlers[m.ID](c.Connection, message)
 	}
 }
 
