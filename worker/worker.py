@@ -1,4 +1,5 @@
 import logging
+import os
 import websocket
 import json
 import time
@@ -66,14 +67,8 @@ class Worker:
         elif data["id"] == SendFileMessage:
             self.send_files_handler(data)
 
-        # elif data["id"] == "init-hyperopt":
-        #     self.init_handler(data["search_space"], data["initial_best_config"])
-
-        # elif data["id"] == "results":
-        #     self.get_results_handler(data["results"])
-
-        # elif data["id"] == "start-optimization":
-        #     self.start_optimization_handler()
+        elif data["id"] == SendClientParamsMessageID:
+            self.send_params_handler(data)
 
     def send_files_handler(self, data):
 
@@ -90,7 +85,23 @@ class Worker:
         self.training_file = training_file
         self.evaluation_file = evaluation_file
 
+        f = open("model.py", "w")
+        f.write(model_file)
+        f.close()
+
         self.ws_connection.send(messages.create_ready_to_train_message())
+
+    def send_params_handler(self, data):
+        params_id = data["params_id"]
+        params = data["params"]
+
+        # train and evaluatethe model
+        model = eval(self.training_file)(params)
+        loss = eval(self.training_file)(model)
+
+        self.ws_connection.send(
+            messages.create_recieve_results_message(params_id, loss)
+        )
 
     def on_open(self, ws):
         logging.info("Connection Opened")
