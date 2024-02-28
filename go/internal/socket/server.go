@@ -123,7 +123,10 @@ func (s *SocketServer) workerHandler(w http.ResponseWriter, r *http.Request) {
 		return conn.NetConn().Close()
 	})
 	s.WorkerClients[conn] = client
-	s.MasterClient.SendClientConnectedMessage(client)
+
+	if s.MasterClient != nil {
+		s.MasterClient.SendClientConnectedMessage(client)
+	}
 	client.SendFiles(s.modelFileId, s.trainingFileId, s.evaluationFileId)
 	client.Listen(s)
 }
@@ -271,13 +274,19 @@ func (s *SocketServer) Start(clean bool) error {
 
 func NewSocketServer() *SocketServer {
 	s := &SocketServer{
-		WorkerClients:      make(map[*websocket.Conn]*WorkerClient),
-		workerHandlers:     make(map[string]func(connection *websocket.Conn, message []byte)),
-		hyperoptHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
-		masterHandlers:     make(map[string]func(connection *websocket.Conn, message []byte)),
+		WorkerClients: make(map[*websocket.Conn]*WorkerClient),
+
+		workerHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
+		hyperoptHandlers: make(map[string]func(connection *websocket.Conn, message []byte)),
+		masterHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
+
+		paramsQueue:      make(chan interface{}, 64),
+		availableWorkers: make(chan *WorkerClient, 64),
+
 		trainingIdStateMap: make(map[string]TrainingRun),
-		paramsQueue:        make(chan interface{}, 64),
-		availableWorkers:   make(chan *WorkerClient, 64),
+		clientJobMap:       make(map[*websocket.Conn]string),
+
+		Trace: true, // default verbose logging info
 	}
 
 	s.masterHandlers[InitiateTrainingResponseID] = s.onRecievedInitialSearchSpaceAndInitialPoint
@@ -288,7 +297,6 @@ func NewSocketServer() *SocketServer {
 	s.workerHandlers[ReadyToTrainResponseId] = s.onRecievedClientReadyToTrain
 	s.workerHandlers[RecieveParamsResultsResponseID] = s.onRecievedTrainingResults
 
-	s.Trace = true // default verbose logging info
 	return s
 }
 
@@ -302,7 +310,11 @@ func (s *SocketServer) onWorkerDisconnect(conn *websocket.Conn) {
 		s.paramsQueue <- batch
 	}
 
-	s.MasterClient.SendClientDisconnectedMessage(s.WorkerClients[c.Connection])
+	if s.MasterClient != nil {
+		s.MasterClient.SendClientDisconnectedMessage(s.WorkerClients[c.Connection])
+	}
+
+	delete(s.WorkerClients, c.Connection)
 }
 
 func (s *SocketServer) onRecievedTrainingResults(conn *websocket.Conn, message []byte) {
@@ -373,7 +385,6 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 		worker = <-s.availableWorkers
 	}
 
-	fmt.Printf("worker is %+v", worker)
 	worker.SendParamsMessage(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID)
 
 	s.clientJobMap[worker.Connection] = HyperoptRecieveNextParamsResponse.ParamsID
