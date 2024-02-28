@@ -2,7 +2,6 @@ package socket
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -10,37 +9,33 @@ import (
 
 type MasterClient struct {
 	Connection *websocket.Conn
+	Name       string
 }
 
 func NewMasterClient(connection *websocket.Conn) *MasterClient {
-	return &MasterClient{Connection: connection}
+	return &MasterClient{Connection: connection, Name: ng.Generate()}
 }
 
 func (c *MasterClient) Listen(s *SocketServer) {
-	name := ng.Generate()
-
 	if s.Trace {
-		log.Printf("Master client (%s) connected\n", name)
+		log.Printf("Master client (%s) connected\n", c.Name)
 	}
 
 	for {
 		if s.Trace {
-			log.Printf("Reading message from master client (%s)\n", name)
+			log.Printf("Reading message from master client (%s)\n", c.Name)
 		}
 
 		messageType, message, err := c.Connection.ReadMessage()
 
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			break
 		}
 
-		if messageType == websocket.CloseMessage {
-			if s.Trace {
-				log.Printf("Master client (%s) disconnected\n", name)
-			}
-			// TODO: Handle master client disconnect
-			break
+		if messageType != websocket.TextMessage {
+			log.Printf("Received non-text message from master client (%s)\n", c.Name)
+			continue
 		}
 
 		m := Message{}
@@ -51,7 +46,7 @@ func (c *MasterClient) Listen(s *SocketServer) {
 		}
 
 		if s.Trace {
-			log.Printf("Received message from master client (%s): %s\n", name, m.ID)
+			log.Printf("Received message from master client (%s): %s\n", c.Name, m.ID)
 		}
 
 		if s.masterHandlers[m.ID] == nil {
@@ -60,7 +55,7 @@ func (c *MasterClient) Listen(s *SocketServer) {
 		}
 
 		if s.Trace {
-			log.Printf("Handling message from master client (%s): %s\n", name, m.ID)
+			log.Printf("Handling message from master client (%s): %s\n", c.Name, m.ID)
 		}
 
 		go s.masterHandlers[m.ID](c.Connection, message)

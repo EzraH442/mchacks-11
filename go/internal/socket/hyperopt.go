@@ -2,7 +2,6 @@ package socket
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -10,10 +9,11 @@ import (
 
 type HyperoptClient struct {
 	Connection *websocket.Conn
+	Name       string
 }
 
 func NewHyperoptClient(connection *websocket.Conn) *HyperoptClient {
-	return &HyperoptClient{Connection: connection}
+	return &HyperoptClient{Connection: connection, Name: ng.Generate()}
 }
 
 func (c *HyperoptClient) Listen(s *SocketServer) {
@@ -27,16 +27,13 @@ func (c *HyperoptClient) Listen(s *SocketServer) {
 		messageType, message, err := c.Connection.ReadMessage()
 
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			break
 		}
 
-		if messageType == websocket.CloseMessage {
-			if s.Trace {
-				log.Printf("Hyperopt client (%s) disconnected\n", name)
-			}
-			// TODO: Handle hyperopt disconnect (this is serious!!!)
-			break
+		if messageType != websocket.TextMessage {
+			log.Printf("Received non-text message from hyperopt client (%s)\n", c.Name)
+			continue
 		}
 
 		m := Message{}

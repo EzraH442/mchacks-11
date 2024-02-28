@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"socket"
 )
 
@@ -9,5 +9,5 @@ func main() {
 	socketServer := socket.NewSocketServer()
 	err := socketServer.Start(true)
 
-	fmt.Println(err)
+	log.Println(err)
 }

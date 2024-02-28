@@ -85,13 +85,9 @@ func (c *WorkerClient) Listen(s *SocketServer) {
 			break
 		}
 
-		if messageType == websocket.CloseMessage {
-			if s.Trace {
-				log.Printf("Worker client (%s) disconnected\n", c.Name)
-			}
-
-			s.onWorkerDisconnect(c.Connection)
-			break
+		if messageType != websocket.TextMessage {
+			log.Printf("Received non-text message from worker client (%s)\n", c.Name)
+			continue
 		}
 
 		m := Message{}

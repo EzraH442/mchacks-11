@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -67,11 +68,15 @@ func (s *SocketServer) masterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	s.MasterClient = &MasterClient{Connection: conn}
+	s.MasterClient = NewMasterClient(conn)
+	conn.SetCloseHandler(func(code int, text string) error {
+		if s.Trace {
+			log.Printf("Master client (%s) disconnected with code %d and text %s\n", s.MasterClient.Name, code, text)
+		}
+		s.onMasterDisconnect(conn)
+		return conn.NetConn().Close()
+	})
 	s.MasterClient.Listen(s)
-
-	s.MasterClient = nil
-	s.MasterClient.Connection.Close()
 }
 
 func (s *SocketServer) hyperoptHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +92,13 @@ func (s *SocketServer) hyperoptHandler(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	s.HyperoptClient = &HyperoptClient{Connection: conn}
+	conn.SetCloseHandler(func(code int, text string) error {
+		if s.Trace {
+			log.Printf("Hyperopt client (%s) disconnected with code %d and text %s\n", s.HyperoptClient.Name, code, text)
+		}
+		s.onHyperoptDisconnect(conn)
+		return conn.NetConn().Close()
+	})
 	s.HyperoptClient.Listen(s)
 	// clean up
 	s.HyperoptClient = nil
@@ -101,6 +113,15 @@ func (s *SocketServer) workerHandler(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	client := NewWorker(conn)
+	conn.SetCloseHandler(func(code int, text string) error {
+		if s.Trace {
+			log.Printf("Worker client (%s) disconnected with code %d and text %s\n", client.Name, code, text)
+		}
+		s.onWorkerDisconnect(
+			conn,
+		)
+		return conn.NetConn().Close()
+	})
 	s.WorkerClients[conn] = client
 	s.MasterClient.SendClientConnectedMessage(client)
 	client.SendFiles(s.modelFileId, s.trainingFileId, s.evaluationFileId)
@@ -113,13 +134,13 @@ func writeFile(f multipart.File) (string, error) {
 	id := uuid.NewString()
 	dst, err := os.Create("uploads/" + id)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return "", err
 	}
 	defer dst.Close()
 	_, err = io.Copy(dst, f)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return "", err
 	}
 	return id, nil
@@ -139,14 +160,14 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseMultipartForm(MAX_UPLOAD_SIZE); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Files too large", http.StatusBadRequest)
 		return
 	}
 
 	modelFile, _, err := r.FormFile("model")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Error processing model file", http.StatusBadRequest)
 		return
 	}
@@ -154,35 +175,35 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 	modelFileId, err := writeFile(modelFile)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Error processing model file", http.StatusBadRequest)
 		return
 	}
 
 	trainingFile, _, err := r.FormFile("training")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Error processing training file", http.StatusBadRequest)
 		return
 	}
 	defer trainingFile.Close()
 	trainingFileId, err := writeFile(trainingFile)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Error processing training file", http.StatusBadRequest)
 		return
 	}
 
 	evaluationFile, _, err := r.FormFile("evaluation")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Error processing evaluation file", http.StatusBadRequest)
 		return
 	}
 	defer evaluationFile.Close()
 	evaluationFileId, err := writeFile(evaluationFile)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		http.Error(w, "Error processing evaluation file", http.StatusBadRequest)
 		return
 	}
@@ -227,7 +248,7 @@ func (s *SocketServer) Start(clean bool) error {
 	http.HandleFunc("/worker", s.workerHandler)
 
 	http.HandleFunc("/upload", s.uploadHandler)
-	fmt.Println("Starting server on :8080")
+	log.Println("Starting server on :8080")
 
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
@@ -277,7 +298,7 @@ func (s *SocketServer) onRecievedTrainingResults(conn *websocket.Conn, message [
 	err := json.Unmarshal(message, &response)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -329,7 +350,7 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 	err := json.Unmarshal(message, &HyperoptRecieveNextParamsResponse)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -353,10 +374,15 @@ func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket
 }
 
 func (s *SocketServer) onRecievedClientReadyToTrain(conn *websocket.Conn, message []byte) {
-	if s.Trace {
-		fmt.Println("Recieved ReadyToTrainResponseId")
-	}
 	s.WorkerClients[conn].Status = Idle
 	s.MasterClient.SendClientReadyToTrainMessage(s.WorkerClients[conn])
 	s.availableWorkers <- s.WorkerClients[conn]
+}
+
+func (s *SocketServer) onHyperoptDisconnect(conn *websocket.Conn) {
+	s.HyperoptClient = nil
+}
+
+func (s *SocketServer) onMasterDisconnect(conn *websocket.Conn) {
+	s.MasterClient = nil
 }
