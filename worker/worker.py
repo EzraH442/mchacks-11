@@ -116,8 +116,18 @@ class Worker:
         p = build_training_params(params, v_table)
 
         logging.info(f"Training with Params: {p}")
-        model = eval(self.training_file)(p)
-        loss = eval(self.training_file)(model)
+
+        scope = {}
+        logging.info(f"Exec {self.training_file}")
+        exec(self.training_file, scope)
+        model = scope["train_model"](p)
+        logging.info(f"Model Trained")
+
+        logging.info("Evaluating model...")
+        logging.info(f"Exec {self.evaluation_file}")
+        exec(self.evaluation_file, scope)
+        loss = scope["evaluate_model"](model)
+        logging.info(f"Loss: {loss}")
 
         self.ws_connection.send(
             messages.create_recieve_results_message(params_id, loss)

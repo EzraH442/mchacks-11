@@ -38,11 +38,9 @@ def create_search_space_from_params(params):
             # names of python functions will get mapped to the actual function in each worker node
             space[k] = hp.choice(k, v["options"])
         if v["type"] == "uniform":
-            if v["dataType"] == "int":
-                space[k] = hp.uniform(k, v["min"], v["max"])
+            space[k] = hp.uniform(k, v["min"], v["max"])
         if v["type"] == "quniform":
-            if v["dataType"] == "int":
-                space[k] = hp.quniform(k, v["min"], v["max"], v["q"])
+            space[k] = hp.quniform(k, v["min"], v["max"], v["q"])
     return space, vtable
 
 
