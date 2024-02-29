@@ -7,9 +7,8 @@ func main() {
 		Packages: []*tygo.PackageConfig{
 			{
 				Path:         "socket",
-				IncludeFiles: []string{"master_messages.go"},
+				IncludeFiles: []string{"master_messages.go", "master_handlers.go", "message.go"},
 				TypeMappings: map[string]string{
-					"uuid.UUID":   "string /* uuid */",
 					"interface{}": "any /* hyperparameters */",
 				},
 				FallbackType: "any",

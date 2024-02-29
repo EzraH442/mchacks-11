@@ -44,13 +44,13 @@ const WorkerBatchMapEntry = types.model('WorkerBatchMapEntry', {
   batchId: types.string,
 });
 
-const determineStatus = (status: string) => {
+const determineStatus = (status: number) => {
   switch (status) {
-    case '0':
+    case 0:
       return EClientStatus.IDLE;
-    case '1':
+    case 1:
       return EClientStatus.NOT_READY;
-    case '2':
+    case 2:
       return EClientStatus.WORKING;
   }
   throw new Error('Invalid status');
@@ -74,7 +74,7 @@ export const Training = types
     },
   }))
   .actions((self) => ({
-    addWorker(worker: g.Worker) {
+    addWorker(worker: g.WorkerInfo) {
       self.workers.set(worker.worker_id, {
         id: worker.worker_id,
         name: worker.name,
@@ -83,7 +83,7 @@ export const Training = types
         currentTask: {},
       });
     },
-    addWorkers(workers: g.Worker[]) {
+    addWorkers(workers: g.WorkerInfo[]) {
       workers.forEach((worker) => {
         self.workers.set(worker.worker_id, {
           id: worker.worker_id,

@@ -3,39 +3,36 @@ package socket
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
-const (
-	TrainingStateIdle = iota
-	TrainingStateRunning
-	TrainingStateFinished
-)
-
-type TrainingRun struct {
-	ID     string
-	Status int
-	Loss   float64
-	Params interface{}
+type ParamsInfo struct {
+	ParamsID string
+	Params   interface{}
+	VTable   interface{}
 }
 
-type SocketServer struct {
-	WorkerClients    map[*websocket.Conn]*WorkerClient
-	HyperoptClient   *HyperoptClient
-	MasterClient     *MasterClient
-	workerHandlers   map[string]func(connection *websocket.Conn, message []byte)
-	hyperoptHandlers map[string]func(connection *websocket.Conn, message []byte)
-	masterHandlers   map[string]func(connection *websocket.Conn, message []byte)
+type Hub struct {
+	workerClients    map[*websocket.Conn]*WorkerClient
+	subcriberClients map[*websocket.Conn]*SubscriberClient
+	masterClient     *MasterClient
+	hyperoptClient   *HyperoptClient
 
-	paramsQueue      chan interface{}
+	registerWorkerClient       chan *WorkerClient
+	unregisterWorkerClient     chan *WorkerClient
+	registerSubscriberClient   chan *SubscriberClient
+	unregisterSubscriberClient chan *SubscriberClient
+	registerMasterClient       chan *MasterClient
+	unregisterMasterClient     chan *MasterClient
+	registerHyperoptClient     chan *HyperoptClient
+	unregisterHyperoptClient   chan *HyperoptClient
+
+	paramsQueue      chan ParamsInfo
 	availableWorkers chan *WorkerClient
 
 	trainingIdStateMap map[string]TrainingRun
@@ -44,111 +41,207 @@ type SocketServer struct {
 	modelFileId      string
 	trainingFileId   string
 	evaluationFileId string
+}
 
-	Trace bool
+func newHub() *Hub {
+	return &Hub{
+		workerClients:              make(map[*websocket.Conn]*WorkerClient),
+		subcriberClients:           make(map[*websocket.Conn]*SubscriberClient),
+		registerWorkerClient:       make(chan *WorkerClient),
+		unregisterWorkerClient:     make(chan *WorkerClient),
+		registerSubscriberClient:   make(chan *SubscriberClient),
+		unregisterSubscriberClient: make(chan *SubscriberClient),
+		registerMasterClient:       make(chan *MasterClient),
+		unregisterMasterClient:     make(chan *MasterClient),
+		registerHyperoptClient:     make(chan *HyperoptClient),
+		unregisterHyperoptClient:   make(chan *HyperoptClient),
+		paramsQueue:                make(chan ParamsInfo),
+		availableWorkers:           make(chan *WorkerClient),
+		trainingIdStateMap:         make(map[string]TrainingRun),
+		clientJobMap:               make(map[*websocket.Conn]string),
+	}
+}
+
+func (h *Hub) a() {
+	for {
+		params := <-h.paramsQueue
+
+		worker := <-h.availableWorkers
+
+		for _, ok := h.workerClients[worker.Connection]; !ok; {
+			fmt.Println("got disconnected worker")
+			worker = <-h.availableWorkers
+		}
+
+		worker.SendParamsMessage(params.Params, params.ParamsID, params.VTable)
+
+		h.clientJobMap[worker.Connection] = params.ParamsID
+		h.trainingIdStateMap[params.ParamsID] = TrainingRun{
+			Status: TrainingStateRunning,
+			Info:   params,
+		}
+
+		if h.masterClient != nil {
+			h.masterClient.SendClientStartedTrainingMessage(worker, params.ParamsID, params.Params, time.Now().UnixMilli())
+		}
+	}
+
+	// TODO: send subscriber messages
+}
+
+func (h *Hub) run() {
+	go h.a()
+	for {
+		select {
+		case workerClient := <-h.registerWorkerClient:
+			h.workerClients[workerClient.Connection] = workerClient
+
+			if h.masterClient != nil {
+				h.masterClient.SendClientConnectedMessage(workerClient)
+			}
+
+			if h.modelFileId != "" && h.trainingFileId != "" && h.evaluationFileId != "" {
+				workerClient.SendFiles(h.modelFileId, h.trainingFileId, h.evaluationFileId)
+			}
+
+		case workerClient := <-h.unregisterWorkerClient:
+			fmt.Println(h.workerClients[workerClient.Connection])
+			if _, ok := h.workerClients[workerClient.Connection]; ok {
+				if h.masterClient != nil {
+					h.masterClient.SendClientDisconnectedMessage(workerClient)
+				}
+
+				delete(h.workerClients, workerClient.Connection)
+				close(workerClient.send)
+			}
+
+			if currentJob, ok := h.clientJobMap[workerClient.Connection]; ok {
+				log.Printf("(%s) job %s will be requeued", workerClient.ID, currentJob)
+				job := h.trainingIdStateMap[currentJob]
+				delete(h.clientJobMap, workerClient.Connection)
+				h.paramsQueue <- job.Info
+			} else {
+				log.Printf("(%s) no job to requeue", workerClient.ID)
+			}
+
+		case masterClient := <-h.registerMasterClient:
+			h.masterClient = masterClient
+
+		case masterClient := <-h.unregisterMasterClient:
+			if h.masterClient != nil {
+				h.masterClient = nil
+				close(masterClient.send)
+			}
+
+		case hyperoptClient := <-h.registerHyperoptClient:
+			h.hyperoptClient = hyperoptClient
+
+		case hyperoptClient := <-h.unregisterHyperoptClient:
+			if h.hyperoptClient != nil {
+				h.hyperoptClient = nil
+				close(hyperoptClient.send)
+			}
+
+		case subscriberClient := <-h.registerSubscriberClient:
+			h.subcriberClients[subscriberClient.Connection] = subscriberClient
+
+		case subscriberClient := <-h.unregisterSubscriberClient:
+			if _, ok := h.subcriberClients[subscriberClient.Connection]; ok {
+				delete(h.subcriberClients, subscriberClient.Connection)
+				close(subscriberClient.send)
+			}
+
+		}
+	}
+}
+
+const (
+	TrainingStateIdle = iota
+	TrainingStateRunning
+	TrainingStateFinished
+)
+
+type TrainingRun struct {
+	Status int
+	Loss   float64
+	Info   ParamsInfo
+}
+
+type SocketServer struct {
+	hub    *Hub
+	server *http.Server
+	Trace  bool
+}
+
+func NewSocketServer() *SocketServer {
+	return &SocketServer{
+		hub: newHub(),
+		server: &http.Server{
+			Addr: ":8080",
+		},
+	}
 }
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	// Allow connections from any origin
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Accepting all requests
+		return true
 	},
 }
 
-func (s *SocketServer) masterHandler(w http.ResponseWriter, r *http.Request) {
-	if s.MasterClient != nil {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
+func serveWorkerClientWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-
-	s.MasterClient = NewMasterClient(conn)
-	conn.SetCloseHandler(func(code int, text string) error {
-		if s.Trace {
-			log.Printf("Master client (%s) disconnected with code %d and text %s\n", s.MasterClient.Name, code, text)
-		}
-		s.onMasterDisconnect(conn)
-		return conn.NetConn().Close()
-	})
-	s.MasterClient.Listen(s)
-}
-
-func (s *SocketServer) hyperoptHandler(w http.ResponseWriter, r *http.Request) {
-	if s.HyperoptClient != nil {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-
-	s.HyperoptClient = &HyperoptClient{Connection: conn}
-	conn.SetCloseHandler(func(code int, text string) error {
-		if s.Trace {
-			log.Printf("Hyperopt client (%s) disconnected with code %d and text %s\n", s.HyperoptClient.Name, code, text)
-		}
-		s.onHyperoptDisconnect(conn)
-		return conn.NetConn().Close()
-	})
-	s.HyperoptClient.Listen(s)
-	s.HyperoptClient = nil
-}
-
-func (s *SocketServer) workerHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-
-	client := NewWorker(conn)
-	conn.SetCloseHandler(func(code int, text string) error {
-		if s.Trace {
-			log.Printf("Worker client (%s) disconnected with code %d and text %s\n", client.Name, code, text)
-		}
-		s.onWorkerDisconnect(
-			conn,
-		)
-		return conn.NetConn().Close()
-	})
-	s.WorkerClients[conn] = client
-
-	if s.MasterClient != nil {
-		s.MasterClient.SendClientConnectedMessage(client)
-	}
-	client.SendFiles(s.modelFileId, s.trainingFileId, s.evaluationFileId)
-	client.Listen(s)
-}
-
-const MAX_UPLOAD_SIZE = 1024 * 1024 * 50 // 50 MB
-
-func writeFile(f multipart.File) (string, error) {
-	id := uuid.NewString()
-	dst, err := os.Create("uploads/" + id)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return
 	}
-	defer dst.Close()
-	_, err = io.Copy(dst, f)
-	if err != nil {
-		log.Println(err)
-		return "", err
-	}
-	return id, nil
+
+	client := NewWorkerClient(conn, hub)
+	hub.registerWorkerClient <- client
+
+	go client.writePump()
+	go client.readPump()
 }
 
-func readFile(id string) (*os.File, error) {
-	return os.Open("uploads/" + id)
+func serveMasterClientWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	client := NewMasterClient(conn, hub)
+	hub.registerMasterClient <- client
+
+	go client.writePump()
+	go client.readPump()
+}
+
+func serveHyperoptClientWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	client := NewHyperoptClient(conn, hub)
+	hub.registerHyperoptClient <- client
+
+	go client.writePump()
+	go client.readPump()
+}
+
+func serveSubscriberClientWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	client := NewSubscriberClient(conn, hub)
+	hub.registerSubscriberClient <- client
+
+	go client.writePump()
+	go client.readPump()
 }
 
 func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -209,9 +302,9 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.modelFileId = modelFileId
-	s.trainingFileId = trainingFileId
-	s.evaluationFileId = evaluationFileId
+	s.hub.modelFileId = modelFileId
+	s.hub.trainingFileId = trainingFileId
+	s.hub.evaluationFileId = evaluationFileId
 
 	UploadFilesMessage := UploadFilesMessage{
 		ModelFileId:      modelFileId,
@@ -224,18 +317,22 @@ func (s *SocketServer) uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// invalidate all workers
 
-	for _, worker := range s.WorkerClients {
+	for _, worker := range s.hub.workerClients {
 		worker.Status = NotReady
-		s.MasterClient.SendClientNotReadyToTrainMessage(worker)
+
+		if s.hub.masterClient != nil {
+			s.hub.masterClient.SendClientNotReadyToTrainMessage(worker)
+		}
 	}
 
 	// send files to all workers
-	for _, worker := range s.WorkerClients {
+	for _, worker := range s.hub.workerClients {
 		worker.SendFiles(modelFileId, trainingFileId, evaluationFileId)
 	}
 }
 
-func (s *SocketServer) Start(clean bool) error {
+func (s *SocketServer) Listen(clean bool) error {
+
 	// create uploads folder if not exists
 	err := os.MkdirAll("uploads", os.ModePerm)
 	if err != nil {
@@ -256,165 +353,26 @@ func (s *SocketServer) Start(clean bool) error {
 		}
 	}
 
-	http.HandleFunc("/master", s.masterHandler)
-	http.HandleFunc("/hyperopt", s.hyperoptHandler)
-	http.HandleFunc("/worker", s.workerHandler)
+	go s.hub.run()
 
 	http.HandleFunc("/upload", s.uploadHandler)
-	log.Println("Starting server on :8080")
 
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+	http.HandleFunc("/worker", func(w http.ResponseWriter, r *http.Request) {
+		serveWorkerClientWs(s.hub, w, r)
+	})
 
-func NewSocketServer() *SocketServer {
-	s := &SocketServer{
-		WorkerClients: make(map[*websocket.Conn]*WorkerClient),
+	http.HandleFunc("/master", func(w http.ResponseWriter, r *http.Request) {
+		serveMasterClientWs(s.hub, w, r)
+	})
 
-		workerHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
-		hyperoptHandlers: make(map[string]func(connection *websocket.Conn, message []byte)),
-		masterHandlers:   make(map[string]func(connection *websocket.Conn, message []byte)),
+	http.HandleFunc("/hyperopt", func(w http.ResponseWriter, r *http.Request) {
+		serveHyperoptClientWs(s.hub, w, r)
+	})
 
-		paramsQueue:      make(chan interface{}, 64),
-		availableWorkers: make(chan *WorkerClient, 64),
+	http.HandleFunc("/subscriber", func(w http.ResponseWriter, r *http.Request) {
+		serveSubscriberClientWs(s.hub, w, r)
+	})
 
-		trainingIdStateMap: make(map[string]TrainingRun),
-		clientJobMap:       make(map[*websocket.Conn]string),
-
-		Trace: true, // default verbose logging info
-	}
-
-	s.masterHandlers[InitiateTrainingResponseID] = s.onRecievedInitialSearchSpaceAndInitialPoint
-	s.masterHandlers[GetAllClientsResponseID] = s.onRecievedAllClients
-	s.masterHandlers[PingResponseID] = s.onMasterRecievedPing
-	s.hyperoptHandlers[HyperoptRecieveNextParamResponsesID] = s.onRecievedNextHyperparametersFromHyperopt
-
-	s.workerHandlers[ReadyToTrainResponseId] = s.onRecievedClientReadyToTrain
-	s.workerHandlers[RecieveParamsResultsResponseID] = s.onRecievedTrainingResults
-	s.workerHandlers[RecieveTrainingFailedResponseID] = s.onRecievedTrainingFailed
-
-	return s
-}
-
-func (s *SocketServer) onWorkerDisconnect(conn *websocket.Conn) {
-	c := s.WorkerClients[conn]
-
-	if c.Status == Running {
-		paramsID := s.clientJobMap[c.Connection]
-		delete(s.clientJobMap, c.Connection)
-		batch := s.trainingIdStateMap[paramsID]
-		s.paramsQueue <- batch
-	}
-
-	if s.MasterClient != nil {
-		s.MasterClient.SendClientDisconnectedMessage(s.WorkerClients[c.Connection])
-	}
-
-	delete(s.WorkerClients, c.Connection)
-}
-
-func (s *SocketServer) onRecievedTrainingResults(conn *websocket.Conn, message []byte) {
-	response := RecieveParamsResultsResponse{}
-	err := json.Unmarshal(message, &response)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	trainingRun := s.trainingIdStateMap[response.ParamsId]
-	trainingRun.Status = TrainingStateFinished
-	trainingRun.Loss = response.Loss
-	s.trainingIdStateMap[response.ParamsId] = trainingRun
-	worker := s.WorkerClients[conn]
-	worker.Status = Idle
-
-	s.MasterClient.SendClientFinishedTrainingMessage(s.WorkerClients[conn], response.ParamsId, response.Loss, time.Now().UnixMilli())
-	s.HyperoptClient.SendResultsMessage(response.ParamsId, response.Loss)
-	s.availableWorkers <- worker
-}
-
-func (s *SocketServer) onRecievedHyperoptComplete(conn *websocket.Conn, message []byte) {
-}
-
-func (s *SocketServer) onRecievePauseTraining(conn *websocket.Conn, message []byte) {
-}
-
-func (s *SocketServer) onRecievedStartTraining(conn *websocket.Conn, message []byte) {
-}
-
-func (s *SocketServer) onRecievedInitialSearchSpaceAndInitialPoint(conn *websocket.Conn, message []byte) {
-	r := InitiateTrainingResponse{}
-	json.Unmarshal(message, &r)
-	s.HyperoptClient.SendInitMessage(r.SearchSpace, r.InitialParams)
-}
-
-func (s *SocketServer) onRecievedAllClients(conn *websocket.Conn, message []byte) {
-	clients := []Worker{}
-	for _, client := range s.WorkerClients {
-		clients = append(clients, Worker{WorkerID: client.ID,
-			IP:     client.Connection.RemoteAddr().String(),
-			Status: fmt.Sprint(client.Status),
-			Name:   client.Name,
-		})
-	}
-	s.MasterClient.SendGetAllClientsMessage(clients)
-}
-
-func (s *SocketServer) onMasterRecievedPing(conn *websocket.Conn, message []byte) {
-	s.MasterClient.SendPongMessage()
-}
-
-func (s *SocketServer) onRecievedNextHyperparametersFromHyperopt(conn *websocket.Conn, message []byte) {
-	HyperoptRecieveNextParamsResponse := HyperoptRecieveNextParamsResponse{}
-	err := json.Unmarshal(message, &HyperoptRecieveNextParamsResponse)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	var worker = <-s.availableWorkers // maybe not necessary?
-
-	for worker == nil {
-		fmt.Println("got disconnected worker")
-		worker = <-s.availableWorkers
-	}
-
-	worker.SendParamsMessage(HyperoptRecieveNextParamsResponse.Params, HyperoptRecieveNextParamsResponse.ParamsID, HyperoptRecieveNextParamsResponse.VTable)
-
-	s.clientJobMap[worker.Connection] = HyperoptRecieveNextParamsResponse.ParamsID
-	s.trainingIdStateMap[HyperoptRecieveNextParamsResponse.ParamsID] = TrainingRun{
-		ID:     HyperoptRecieveNextParamsResponse.ParamsID,
-		Status: TrainingStateRunning,
-		Params: HyperoptRecieveNextParamsResponse.Params,
-	}
-
-	s.MasterClient.SendClientStartedTrainingMessage(worker, HyperoptRecieveNextParamsResponse.ParamsID, HyperoptRecieveNextParamsResponse.Params, time.Now().UnixMilli())
-}
-
-func (s *SocketServer) onRecievedClientReadyToTrain(conn *websocket.Conn, message []byte) {
-	s.WorkerClients[conn].Status = Idle
-	s.MasterClient.SendClientReadyToTrainMessage(s.WorkerClients[conn])
-	s.availableWorkers <- s.WorkerClients[conn]
-}
-
-func (s *SocketServer) onHyperoptDisconnect(conn *websocket.Conn) {
-	s.HyperoptClient = nil
-}
-
-func (s *SocketServer) onMasterDisconnect(conn *websocket.Conn) {
-	s.MasterClient = nil
-}
-
-func (s *SocketServer) onRecievedTrainingFailed(conn *websocket.Conn, message []byte) {
-	res := RecieveTrainingFailedResponse{}
-	json.Unmarshal(message, &res)
-	log.Printf("Training failed for params_id: %s\nStack trace: %s", res.ParamsId, res.Error)
-
-	// run := s.trainingIdStateMap[res.ParamsId]
-	// do something to handle errors
+	log.Println("Listening on :8080")
+	return s.server.ListenAndServe()
 }

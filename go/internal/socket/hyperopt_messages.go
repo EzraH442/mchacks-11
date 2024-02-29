@@ -1,66 +1,60 @@
 package socket
 
+type HyperoptMessageId string
+
 const (
-	HyperoptInitMessageID               = "init-hyperopt"
-	HyperoptStartOptimizationMessageID  = "start-optimization"
-	HyperoptSendResultsMessageID        = "results"
-	HyperoptTrainingFailedMessageID     = "training-failed"
-	HyperoptRecieveNextParamResponsesID = "push-opt-params"
+	HyperoptInitMessageID              HyperoptMessageId = "init-hyperopt"
+	HyperoptStartOptimizationMessageID HyperoptMessageId = "start-optimization"
+	HyperoptSendResultsMessageID       HyperoptMessageId = "results"
+	HyperoptTrainingFailedMessageID    HyperoptMessageId = "training-failed"
 )
 
 type HyperoptInitMessage struct {
-	ID                string      `json:"id"`
-	SearchSpace       interface{} `json:"search_space"`
-	InitialBestConfig interface{} `json:"initial_best_config"`
+	ID                HyperoptMessageId `json:"id"`
+	SearchSpace       interface{}       `json:"search_space"`
+	InitialBestConfig interface{}       `json:"initial_best_config"`
 }
 
 type HyperoptStartOptimizationMessage struct {
-	ID string `json:"id"`
+	ID HyperoptMessageId `json:"id"`
 }
 
 type HyperoptSendResultsMessage struct {
-	ID       string  `json:"id"`
-	ParamsID string  `json:"params_id"`
-	Loss     float64 `json:"loss"`
-}
-
-func (c *HyperoptClient) SendInitMessage(searchSpace interface{}, initialBestConfig interface{}) {
-	c.Connection.WriteJSON(HyperoptInitMessage{
-		ID:                HyperoptInitMessageID,
-		SearchSpace:       searchSpace,
-		InitialBestConfig: initialBestConfig,
-	})
-}
-
-func (c *HyperoptClient) SendStartOptimizationMessage() {
-	c.Connection.WriteJSON(HyperoptStartOptimizationMessage{
-		ID: HyperoptStartOptimizationMessageID,
-	})
-}
-
-func (c *HyperoptClient) SendResultsMessage(paramsID string, loss float64) {
-	c.Connection.WriteJSON(HyperoptSendResultsMessage{
-		ID:       HyperoptSendResultsMessageID,
-		ParamsID: paramsID,
-		Loss:     loss,
-	})
+	ID       HyperoptMessageId `json:"id"`
+	ParamsID string            `json:"params_id"`
+	Loss     float64           `json:"loss"`
 }
 
 type TrainingFailedMessage struct {
-	ID       string `json:"id"`
-	ParamsID string `json:"params_id"`
+	ID       HyperoptMessageId `json:"id"`
+	ParamsID string            `json:"params_id"`
+}
+
+func (c *HyperoptClient) SendInitMessage(searchSpace interface{}, initialBestConfig interface{}) {
+	c.send <- HyperoptInitMessage{
+		ID:                HyperoptInitMessageID,
+		SearchSpace:       searchSpace,
+		InitialBestConfig: initialBestConfig,
+	}
+}
+
+func (c *HyperoptClient) SendStartOptimizationMessage() {
+	c.send <- HyperoptStartOptimizationMessage{
+		ID: HyperoptStartOptimizationMessageID,
+	}
+}
+
+func (c *HyperoptClient) SendResultsMessage(paramsID string, loss float64) {
+	c.send <- HyperoptSendResultsMessage{
+		ID:       HyperoptSendResultsMessageID,
+		ParamsID: paramsID,
+		Loss:     loss,
+	}
 }
 
 func (c *HyperoptClient) SendTrainingFailedMessage(paramsID string) {
-	c.Connection.WriteJSON(TrainingFailedMessage{
+	c.send <- TrainingFailedMessage{
 		ID:       HyperoptTrainingFailedMessageID,
 		ParamsID: paramsID,
-	})
-}
-
-type HyperoptRecieveNextParamsResponse struct {
-	ID       string      `json:"id"`
-	ParamsID string      `json:"params_id"`
-	Params   interface{} `json:"params"`
-	VTable   interface{} `json:"v_table"`
+	}
 }
